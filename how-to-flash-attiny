@@ -1,0 +1,4 @@
+# avrdude -c avrisp -P /dev/tty.usbmodem1155 -p attiny88     -U lfuse:w:0xEE:m       -U hfuse:w:0xDD:m       -U efuse:w:0xFF:m       -U lock:w:0xFF:m
+
+avrdude -v -pattiny88 -cstk500v1 -P/dev/cu.usbmodem1421 -b19200 -U lfuse:w:0xEE:m       -U hfuse:w:0xDD:m       -U efuse:w:0xFF:m       -U lock:w:0xFF:m
+avrdude -v -pattiny88 -cstk500v1 -P/dev/cu.usbmodem1421 -b19200 -U flash:w:model01-attiny-2016-08-06.hex:i
