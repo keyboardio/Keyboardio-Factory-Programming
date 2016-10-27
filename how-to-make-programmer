@@ -1,3 +1,0 @@
-avrdude -v -patmega32u4 -cstk500v1 -P/dev/cu.usbmodem1421 -b19200 -e -Ulock:w:0x3F:m -Uefuse:w:0xcb:m -Uhfuse:w:0xd8:m -Ulfuse:w:0xff:m 
-avrdude -v -patmega32u4 -cstk500v1 -P/dev/cu.usbmodem1421 -b19200 -Uflash:w:model-01-atmega-bootloader-2016-08-06.hex:i -Ulock:w:0x2F:m 
-avrdude -v -patmega32u4 -cstk500v1 -P/dev/cu.usbmodem1421 -b19200 -D -Uflash:w:model01-programmer-2016-08-06.hex:i
