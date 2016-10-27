@@ -1,0 +1,4 @@
+bin/zadig-2.2.exe from  http://zadig.akeo.ie/downloads/zadig_2.2.exe on 2016-10-27
+
+bin/avrdude.* from http://download.savannah.gnu.org/releases/avrdude/avrdude-6.3-mingw32.zip on 2016-10-27
+

@@ -1,3 +1,0 @@
-bin/zadig-2.2.exe from  http://zadig.akeo.ie/downloads/zadig_2.2.exe on 2016-10-27
-
-bin/avrdude.exe from http://downloads.sourceforge.net/project/winavr/WinAVR/20100110/WinAVR-20100110-install.exe?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fwinavr%2Ffiles%2FWinAVR%2F20100110%2F&ts=1477599879&use_mirror=heanet on 2016-10-27
