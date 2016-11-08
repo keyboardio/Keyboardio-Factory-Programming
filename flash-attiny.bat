@@ -1,7 +1,7 @@
 bin\avrdude -v -pattiny88 -cusbtiny >> attiny-log.txt 2>&1 || goto :wrong_chip
 bin\avrdude -v -pattiny88 -cusbtiny -B1 -e -U lfuse:w:0xEE:m -U hfuse:w:0xDD:m -U efuse:w:0xFE:m -U lock:w:0x3F:m >> attiny-log.txt 2>&1 || goto :error
 
-bin\avrdude -v -pattiny88 -cusbtiny -B1 -U flash:w:firmware/model01-attiny-2016-08-06.hex:i  >> attiny-log.txt 2>&1 || goto :error
+bin\avrdude -v -pattiny88 -cusbtiny -B1 -U flash:w:firmware/model01-attiny-2016-11-07.hex:i  >> attiny-log.txt 2>&1 || goto :error
 
 cscript bin\popup.vbs "OK: Flashed ATTiny."
 
