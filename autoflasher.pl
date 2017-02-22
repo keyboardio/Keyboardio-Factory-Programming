@@ -1,6 +1,8 @@
+#!/usr/bin/perl
 use warnings;
 use strict;
 use IPC::Run;
+use Term::ReadKey;
 
 sub program_board {
     my $device = probe_device();
@@ -132,7 +134,8 @@ sub error {
 sub prompt_to_start {
     while (1) {
         print "\n\n\nConnect a board and then press any key.\n";
-        my $nothing = <>;
+	ReadMode(4);
+        my $nothing = ReadKey();
         eval { program_board(); };
     }
 
