@@ -1,0 +1,15 @@
+[Unit]
+Description=my service
+After=getty@tty1.service
+Conflicts=getty@tty2.service
+
+[Service]
+Type=simple
+ExecStart=/mnt/flasher/autoflasher.pl
+StandardInput=tty
+StandardOutput=tty
+TTYPath=/dev/tty2
+Restart=always
+
+[Install]
+WantedBy=default.target
