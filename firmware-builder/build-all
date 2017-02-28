@@ -1,0 +1,82 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+
+my $tag = shift @ARGV;
+
+my %repos = (
+attiny_bootloader  => 'git://github.com/keyboardio/attiny_i2c_bootloader',
+attiny_firmware  => 'git://github.com/keyboardio/avr_keyscanner',
+arduino_boards  => 'git://github.com/keyboardio/Arduino-Boards',
+"Model01-Firmware" => 'git://github.com/keyboardio/Model01-Firmware'
+);
+
+mkdir("repos");
+mkdir("output");
+
+# Check out repos as of tag $TAG:
+for my $repo_name ( keys %repos)  {
+	my $repo_path = "repos/".$repo_name;
+	if ( ! -d $repo_path."/.git") {
+		git('clone', $repos{$repo_name}, $repo_path);
+	}
+	chdir($repo_path);
+	git(qw/ checkout/,$tag);
+	git(qw/ submodule update --init --recursive/);
+	git(qw/clean -xdf/);
+	chdir("../..");	
+}
+
+
+chdir("repos/attiny_bootloader/TWI_Slave");
+make(qw"all");
+copy("twi_slave.hex","../../../output/attiny88_bootloader.hex");
+chdir("../../..");
+chdir("repos/attiny_firmware");
+copy("../../output/attiny88_bootloader.hex","etc/bootloader.hex");
+
+
+
+make("all");
+make("flashing-tool");
+
+mkdir ("../../output/attiny_flasher");
+copy("out/flasher/flasher.ino","../../output/attiny_flasher/attiny_flasher.ino");
+
+copy("out/attiny88_factory.hex","../../output/attiny88_firmware_with_bootloader.hex");
+copy("out/attiny88_keyscanner.hex","../../output/attiny88_firmware.hex");
+
+chdir("../arduino_boards/bootloaders/caterina");
+make("all");
+copy("Caterina.hex" => "../../../../output/atmega32u4_bootloader.hex");
+
+
+chdir("../../../Model01-Firmware");
+copy("../../output/atmega32u4_bootloader.hex" => "./atmega32u4_bootloader.hex");
+make("build");
+my $pwd = `pwd`;
+chomp($pwd);
+make("hex-with-bootloader", "BOOTLOADER_PATH=".$pwd."/atmega32u4_bootloader.hex");
+
+copy("output/Model01-Firmware/Model01-Firmware-latest.hex" => "../../output/atmega32u4_firmware.hex");
+copy("output/Model01-Firmware/Model01-Firmware-latest-with-bootloader.hex" => "../../output/atmega32u4_firmware_with_bootloader.hex");
+
+
+sub copy {
+	my $from = shift;
+	my $to = shift;
+	print `pwd`;
+	print "Copyying $from => $to \n";
+	system("cp", $from, $to);
+}
+
+sub git {
+	my @commands = @_;
+	system('git',@commands);
+}
+
+sub make {
+	my @commands = @_;
+	system('make',@commands);
+}
