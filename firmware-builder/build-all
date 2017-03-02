@@ -68,7 +68,7 @@ sub build_attiny_bootloader {
 
     set_cwd( $ROOT . "repos/attiny_bootloader/TWI_Slave" );
     make(qw"all");
-    copy( "twi_slave.hex", $OUTPUT . $attiny_bootloader_file);
+    make_output( "twi_slave.hex", $attiny_bootloader_file);
 }
 
 sub build_attiny_firmware {
@@ -78,12 +78,11 @@ sub build_attiny_firmware {
     make("all");
     make("flashing-tool");
     mkdir( $OUTPUT . $attiny_flasher_sketch_dir);
-    copy( "out/flasher/flasher.ino",
-        $OUTPUT . $attiny_flasher_sketch_file);
+    make_output( "out/flasher/flasher.ino", $attiny_flasher_sketch_file);
 
 
-    copy( "out/attiny88_factory.hex", $OUTPUT .$attiny_firmware_with_bootloader_file);
-    copy( "out/attiny88_keyscanner.hex", $OUTPUT .$attiny_firmware_file);
+    make_output( "out/attiny88_factory.hex", $attiny_firmware_with_bootloader_file);
+    make_output( "out/attiny88_keyscanner.hex",$attiny_firmware_file);
 
 
 }
@@ -92,7 +91,7 @@ sub build_atmega_bootloader {
 
     set_cwd( $ROOT . "repos/arduino_boards/bootloaders/caterina" );
     make("all");
-    copy( "Caterina.hex" => $OUTPUT .$atmega_bootloader_file);
+    make_output( "Caterina.hex" => $atmega_bootloader_file);
 
 }
 
@@ -103,11 +102,11 @@ sub build_atmega_firmware {
     make( "hex-with-bootloader",
         "BOOTLOADER_PATH=" .  $OUTPUT . $atmega_bootloader_file);
 
-    copy( "output/Model01-Firmware/Model01-Firmware-latest.hex" => $OUTPUT . $atmega_firmware_file);
+    make_output( "output/Model01-Firmware/Model01-Firmware-latest.hex" =>  $atmega_firmware_file);
 
 
-    copy( "output/Model01-Firmware/Model01-Firmware-latest-with-bootloader.hex"
-          => $OUTPUT . $atmega_firmware_with_bootloader_file);
+    make_output( "output/Model01-Firmware/Model01-Firmware-latest-with-bootloader.hex"
+          => $atmega_firmware_with_bootloader_file);
 
 }
 
@@ -116,6 +115,12 @@ sub copy {
     my $to   = shift;
     print "cp $from $to\n";
     my ( $exitcode, $out, $err ) = run_command( "cp", $from, $to );
+}
+
+sub make_output {
+	my $from = shift;
+	my $to = shift;
+	copy($from => $OUTPUT.$to);
 }
 
 sub git {
