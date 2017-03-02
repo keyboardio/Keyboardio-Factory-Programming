@@ -78,13 +78,11 @@ sub build_atmega_bootloader {
 sub build_atmega_firmware {
 
     set_cwd( $ROOT . "repos/Model01-Firmware" );
-    copy( $OUTPUT
-          . "atmega32u4_bootloader-".$git_tags{'arduino_boards'}.".hex" => "./atmega32u4_bootloader.hex" );
     make("build");
     my $pwd = `pwd`;
     chomp($pwd);
     make( "hex-with-bootloader",
-        "BOOTLOADER_PATH=" . $pwd . "/atmega32u4_bootloader.hex" );
+        "BOOTLOADER_PATH=" .  $OUTPUT . "atmega32u4_bootloader-".$git_tags{'arduino_boards'}.".hex" );
 
     copy(   "output/Model01-Firmware/Model01-Firmware-latest.hex" => $OUTPUT
           . "atmega32u4_firmware-".$git_tags{'Model01-Firmware'}.".hex" );
