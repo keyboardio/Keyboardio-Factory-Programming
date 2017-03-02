@@ -13,11 +13,14 @@ arduino_boards  => 'git://github.com/keyboardio/Arduino-Boards',
 "Model01-Firmware" => 'git://github.com/keyboardio/Model01-Firmware'
 );
 
+
+my %git_tags;
+
 mkdir("repos");
 mkdir("output");
 set_cwd("output");
-
 my $OUTPUT=`find \$(pwd)/ -type d -maxdepth 0`;
+set_cwd("..");
 
 # Check out repos as of tag $TAG:
 for my $repo_name ( keys %repos)  {
@@ -29,6 +32,7 @@ for my $repo_name ( keys %repos)  {
 	git(qw/ checkout/,$tag);
 	git(qw/ submodule update --init --recursive/);
 	git(qw/clean -xdf/);
+	$git_tags{$repo_name} = git(qw"describe --abbrev=6 --dirty --always");
 	set_cwd("../..");	
 }
 
