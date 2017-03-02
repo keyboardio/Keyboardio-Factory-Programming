@@ -24,6 +24,17 @@ my $OUTPUT = get_cwd();
 
 set_cwd("..");
 
+get_code();
+
+build_attiny_bootloader();
+build_attiny_firmware();
+build_atmega_bootloader();
+build_atmega_firmware();
+
+
+
+sub get_code { 
+
 # Check out repos as of tag $TAG:
 for my $repo_name ( keys %repos ) {
     set_cwd($ROOT);
@@ -39,11 +50,10 @@ my $tag = git(qw"describe --abbrev=6 --dirty --always");
 	chomp($tag);
     $git_tags{$repo_name}  = $tag;
 }
+}
 
-build_attiny_bootloader();
-build_attiny_firmware();
-build_atmega_bootloader();
-build_atmega_firmware();
+
+
 sub build_attiny_bootloader {
 
     set_cwd( $ROOT . "repos/attiny_bootloader/TWI_Slave" );
