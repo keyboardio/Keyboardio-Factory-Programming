@@ -7,14 +7,13 @@ use IPC::Run;
 my $tag = shift @ARGV;
 
 my %repos = (
-attiny_bootloader  => 'git://github.com/keyboardio/attiny_i2c_bootloader',
-attiny_firmware  => 'git://github.com/keyboardio/avr_keyscanner',
-arduino_boards  => 'git://github.com/keyboardio/Arduino-Boards',
-"Model01-Firmware" => 'git://github.com/keyboardio/Model01-Firmware'
+    attiny_bootloader  => 'git://github.com/keyboardio/attiny_i2c_bootloader',
+    attiny_firmware    => 'git://github.com/keyboardio/avr_keyscanner',
+    arduino_boards     => 'git://github.com/keyboardio/Arduino-Boards',
+    "Model01-Firmware" => 'git://github.com/keyboardio/Model01-Firmware'
 );
 
 my $ROOT = get_cwd();
-
 
 my %git_tags;
 
@@ -26,17 +25,17 @@ my $OUTPUT = get_cwd();
 set_cwd("..");
 
 # Check out repos as of tag $TAG:
-for my $repo_name ( keys %repos)  {
-	set_cwd($ROOT);
-	my $repo_path = "repos/".$repo_name;
-	if ( ! -d $repo_path."/.git") {
-		git('clone', $repos{$repo_name}, $repo_path);
-	}
-	set_cwd($repo_path);
-	git(qw/ checkout/,$tag);
-	git(qw/ submodule update --init --recursive/);
-	git(qw/clean -xdf/);
-	$git_tags{$repo_name} = git(qw"describe --abbrev=6 --dirty --always");
+for my $repo_name ( keys %repos ) {
+    set_cwd($ROOT);
+    my $repo_path = "repos/" . $repo_name;
+    if ( !-d $repo_path . "/.git" ) {
+        git( 'clone', $repos{$repo_name}, $repo_path );
+    }
+    set_cwd($repo_path);
+    git( qw/ checkout/, $tag );
+    git(qw/ submodule update --init --recursive/);
+    git(qw/clean -xdf/);
+    $git_tags{$repo_name} = git(qw"describe --abbrev=6 --dirty --always");
 }
 
 build_attiny_bootloader();
@@ -46,95 +45,87 @@ build_atmega_bootloader();
 
 build_atmega_firmware();
 
-
-
-
-
-
-
 sub build_attiny_bootloader {
 
-set_cwd($ROOT."repos/attiny_bootloader/TWI_Slave");
-make(qw"all");
-copy("twi_slave.hex",$OUTPUT."attiny88_bootloader.hex");
+    set_cwd( $ROOT . "repos/attiny_bootloader/TWI_Slave" );
+    make(qw"all");
+    copy( "twi_slave.hex", $OUTPUT . "attiny88_bootloader.hex" );
 }
-
 
 sub build_attiny_firmware {
 
-set_cwd($ROOT."repos/attiny_firmware");
-copy($OUTPUT."attiny88_bootloader.hex","etc/bootloader.hex");
-make("all");
-make("flashing-tool");
-mkdir ($OUTPUT."attiny_flasher");
-copy("out/flasher/flasher.ino",$OUTPUT."attiny_flasher/attiny_flasher.ino");
+    set_cwd( $ROOT . "repos/attiny_firmware" );
+    copy( $OUTPUT . "attiny88_bootloader.hex", "etc/bootloader.hex" );
+    make("all");
+    make("flashing-tool");
+    mkdir( $OUTPUT . "attiny_flasher" );
+    copy( "out/flasher/flasher.ino",
+        $OUTPUT . "attiny_flasher/attiny_flasher.ino" );
 
-copy("out/attiny88_factory.hex",$OUTPUT."attiny88_firmware_with_bootloader.hex");
-copy("out/attiny88_keyscanner.hex",$OUTPUT."attiny88_firmware.hex");
+    copy( "out/attiny88_factory.hex",
+        $OUTPUT . "attiny88_firmware_with_bootloader.hex" );
+    copy( "out/attiny88_keyscanner.hex", $OUTPUT . "attiny88_firmware.hex" );
 
 }
-
-
 
 sub build_atmega_bootloader {
 
-set_cwd($ROOT."repos/arduino_boards/bootloaders/caterina");
-make("all");
-copy("Caterina.hex" => $OUTPUT."atmega32u4_bootloader.hex");
+    set_cwd( $ROOT . "repos/arduino_boards/bootloaders/caterina" );
+    make("all");
+    copy( "Caterina.hex" => $OUTPUT . "atmega32u4_bootloader.hex" );
 
 }
-
 
 sub build_atmega_firmware {
 
-set_cwd($ROOT."repos/Model01-Firmware");
-copy($OUTPUT."atmega32u4_bootloader.hex" => "./atmega32u4_bootloader.hex");
-make("build");
-my $pwd = `pwd`;
-chomp($pwd);
-make("hex-with-bootloader", "BOOTLOADER_PATH=".$pwd."/atmega32u4_bootloader.hex");
+    set_cwd( $ROOT . "repos/Model01-Firmware" );
+    copy( $OUTPUT
+          . "atmega32u4_bootloader.hex" => "./atmega32u4_bootloader.hex" );
+    make("build");
+    my $pwd = `pwd`;
+    chomp($pwd);
+    make( "hex-with-bootloader",
+        "BOOTLOADER_PATH=" . $pwd . "/atmega32u4_bootloader.hex" );
 
-copy("output/Model01-Firmware/Model01-Firmware-latest.hex" => $OUTPUT."atmega32u4_firmware.hex");
-copy("output/Model01-Firmware/Model01-Firmware-latest-with-bootloader.hex" => $OUTPUT."atmega32u4_firmware_with_bootloader.hex");
+    copy(   "output/Model01-Firmware/Model01-Firmware-latest.hex" => $OUTPUT
+          . "atmega32u4_firmware.hex" );
+    copy( "output/Model01-Firmware/Model01-Firmware-latest-with-bootloader.hex"
+          => $OUTPUT . "atmega32u4_firmware_with_bootloader.hex" );
 }
 
-
-
-
-
 sub copy {
-	my $from = shift;
-	my $to = shift;
-	print "cp $from $to\n";
-	my ($exitcode, $out, $err) = 
-	run_command("cp", $from, $to);
+    my $from = shift;
+    my $to   = shift;
+    print "cp $from $to\n";
+    my ( $exitcode, $out, $err ) = run_command( "cp", $from, $to );
 }
 
 sub git {
-	my @commands = (@_);
-	print "git ".join(" ",@commands)."\n";
-	my ($exitcode, $out, $err) = run_command('git',@commands);
-	return $out;
+    my @commands = (@_);
+    print "git " . join( " ", @commands ) . "\n";
+    my ( $exitcode, $out, $err ) = run_command( 'git', @commands );
+    return $out;
 }
 
 sub make {
-	my @commands = (@_);
-	my ($exitcode, $out, $err) = 
-		run_command('make',@commands);
-		print join (" ", 'make', @commands) ."\n";
-	if ($exitcode) { 
-		print "Ran command: ". join (" ", 'make', @commands);
-		print "$err\n";
-	} elsif ($err) {
-		print "No failure, but still error output:\n\n$err\n";
-	} else {
-		
-	}
+    my @commands = (@_);
+    my ( $exitcode, $out, $err ) = run_command( 'make', @commands );
+    print join( " ", 'make', @commands ) . "\n";
+    if ($exitcode) {
+        print "Ran command: " . join( " ", 'make', @commands );
+        print "$err\n";
+    }
+    elsif ($err) {
+        print "No failure, but still error output:\n\n$err\n";
+    }
+    else {
+
+    }
 }
 
 sub run_command {
-	my @cmd = (@_);
-	my ($in,$out,$err, $exitcode);
+    my @cmd = (@_);
+    my ( $in, $out, $err, $exitcode );
     eval {
         IPC::Run::run( \@cmd, \$in, \$out, \$err );
 
@@ -143,27 +134,27 @@ sub run_command {
 
         # Could not run the program
         $exitcode = undef;
-	die "Could not run command";
+        die "Could not run command";
     }
     else {
         $exitcode = $? >> 8;
     }
 
-	if ($exitcode != 0) {
-		die "Exit code $exitcode";
-	}
-   return($exitcode, $out, $err);
+    if ( $exitcode != 0 ) {
+        die "Exit code $exitcode";
+    }
+    return ( $exitcode, $out, $err );
 }
 
 sub set_cwd {
-	my $dir = shift;
-	print "\ncd $dir\n";
-	chdir($dir);
-}	
+    my $dir = shift;
+    print "\ncd $dir\n";
+    chdir($dir);
+}
 
 sub get_cwd {
-my $dir=`find \$(pwd)/ -type d -maxdepth 0`;
-chomp($dir);
-return $dir;
-};
+    my $dir = `find \$(pwd)/ -type d -maxdepth 0`;
+    chomp($dir);
+    return $dir;
+}
 
