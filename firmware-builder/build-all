@@ -19,7 +19,8 @@ my %git_tags;
 mkdir("repos");
 mkdir("output");
 set_cwd("output");
-my $OUTPUT=`find \$(pwd)/ -type d -maxdepth 0`;
+my $OUTPUT = get_cwd();
+
 set_cwd("..");
 
 # Check out repos as of tag $TAG:
@@ -36,29 +37,54 @@ for my $repo_name ( keys %repos)  {
 	set_cwd("../..");	
 }
 
+build_attiny_bootloader();
+build_attiny_firmware();
+
+build_atmega_bootloader();
+
+build_atmega_firmware();
+
+
+
+
+
+
+
+sub build_attiny_bootloader {
 
 set_cwd("repos/attiny_bootloader/TWI_Slave");
 make(qw"all");
 copy("twi_slave.hex",$OUTPUT."attiny88_bootloader.hex");
 set_cwd("../../..");
+}
+
+
+sub build_attiny_firmware {
+
 set_cwd("repos/attiny_firmware");
-copy("../../output/attiny88_bootloader.hex","etc/bootloader.hex");
-
-
-
+copy($OUTPUT."attiny88_bootloader.hex","etc/bootloader.hex");
 make("all");
 make("flashing-tool");
-
-mkdir ("../../output/attiny_flasher");
+mkdir ($OUTPUT."attiny_flasher");
 copy("out/flasher/flasher.ino",$OUTPUT."attiny_flasher/attiny_flasher.ino");
 
 copy("out/attiny88_factory.hex",$OUTPUT."attiny88_firmware_with_bootloader.hex");
-copy("out/attiny88_keyscanner.hex",$OUTPUT."output/attiny88_firmware.hex");
+copy("out/attiny88_keyscanner.hex",$OUTPUT."attiny88_firmware.hex");
+
+}
+
+
+
+sub build_atmega_bootloader {
 
 set_cwd("../arduino_boards/bootloaders/caterina");
 make("all");
 copy("Caterina.hex" => $OUTPUT."atmega32u4_bootloader.hex");
 
+}
+
+
+sub build_atmega_firmware {
 
 set_cwd("../../../Model01-Firmware");
 copy($OUTPUT."atmega32u4_bootloader.hex" => "./atmega32u4_bootloader.hex");
@@ -69,6 +95,10 @@ make("hex-with-bootloader", "BOOTLOADER_PATH=".$pwd."/atmega32u4_bootloader.hex"
 
 copy("output/Model01-Firmware/Model01-Firmware-latest.hex" => $OUTPUT."atmega32u4_firmware.hex");
 copy("output/Model01-Firmware/Model01-Firmware-latest-with-bootloader.hex" => $OUTPUT."atmega32u4_firmware_with_bootloader.hex");
+}
+
+
+
 
 
 sub copy {
@@ -82,8 +112,8 @@ sub copy {
 sub git {
 	my @commands = (@_);
 	print "git ".join(" ",@commands)."\n";
-	my ($exitcode, $out, $err) = 
-	run_command('git',@commands);
+	my ($exitcode, $out, $err) = run_command('git',@commands);
+	return $out;
 }
 
 sub make {
@@ -112,16 +142,27 @@ sub run_command {
 
         # Could not run the program
         $exitcode = undef;
+	die "Could not run command";
     }
     else {
         $exitcode = $? >> 8;
     }
 
+	if ($exitcode != 0) {
+		die "Exit code $exitcode";
+	}
    return($exitcode, $out, $err);
 }
 
 sub set_cwd {
 	my $dir = shift;
-	print "\ncd ".`pwd`."\n";	
+	print "\ncd $dir\n";
 	chdir($dir);
 }	
+
+sub get_cwd {
+my $dir=`find \$(pwd)/ -type d -maxdepth 0`;
+chomp($dir);
+return $dir;
+};
+
