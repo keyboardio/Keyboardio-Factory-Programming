@@ -35,36 +35,35 @@ for my $repo_name ( keys %repos ) {
     git( qw/ checkout/, $tag );
     git(qw/ submodule update --init --recursive/);
     git(qw/clean -xdf/);
-    $git_tags{$repo_name} = git(qw"describe --abbrev=6 --dirty --always");
+my $tag = git(qw"describe --abbrev=6 --dirty --always");
+	chomp($tag);
+    $git_tags{$repo_name}  = $tag;
 }
 
 build_attiny_bootloader();
 build_attiny_firmware();
-
 build_atmega_bootloader();
-
 build_atmega_firmware();
-
 sub build_attiny_bootloader {
 
     set_cwd( $ROOT . "repos/attiny_bootloader/TWI_Slave" );
     make(qw"all");
-    copy( "twi_slave.hex", $OUTPUT . "attiny88_bootloader.hex" );
+    copy( "twi_slave.hex", $OUTPUT . "attiny88_bootloader-".$git_tags{'attiny_bootloader'}.".hex" );
 }
 
 sub build_attiny_firmware {
 
     set_cwd( $ROOT . "repos/attiny_firmware" );
-    copy( $OUTPUT . "attiny88_bootloader.hex", "etc/bootloader.hex" );
+    copy( $OUTPUT . "attiny88_bootloader-".$git_tags{'attiny_bootloader'}.".hex", "etc/bootloader.hex" );
     make("all");
     make("flashing-tool");
-    mkdir( $OUTPUT . "attiny_flasher" );
+    mkdir( $OUTPUT . "attiny_flasher-".$git_tags{'attiny_firmware'} );
     copy( "out/flasher/flasher.ino",
-        $OUTPUT . "attiny_flasher/attiny_flasher.ino" );
+        $OUTPUT . "attiny_flasher-".$git_tags{'attiny_firmware'}."/attiny_flasher.ino" );
 
     copy( "out/attiny88_factory.hex",
-        $OUTPUT . "attiny88_firmware_with_bootloader.hex" );
-    copy( "out/attiny88_keyscanner.hex", $OUTPUT . "attiny88_firmware.hex" );
+        $OUTPUT . "attiny88_firmware_with_bootloader-".$git_tags{'attiny_firmware'}.".hex" );
+    copy( "out/attiny88_keyscanner.hex", $OUTPUT . "attiny88_firmware-".$git_tags{'attiny_firmware'}.".hex" );
 
 }
 
@@ -72,7 +71,7 @@ sub build_atmega_bootloader {
 
     set_cwd( $ROOT . "repos/arduino_boards/bootloaders/caterina" );
     make("all");
-    copy( "Caterina.hex" => $OUTPUT . "atmega32u4_bootloader.hex" );
+    copy( "Caterina.hex" => $OUTPUT . "atmega32u4_bootloader-".$git_tags{'arduino_boards'}.".hex" );
 
 }
 
@@ -80,7 +79,7 @@ sub build_atmega_firmware {
 
     set_cwd( $ROOT . "repos/Model01-Firmware" );
     copy( $OUTPUT
-          . "atmega32u4_bootloader.hex" => "./atmega32u4_bootloader.hex" );
+          . "atmega32u4_bootloader-".$git_tags{'arduino_boards'}.".hex" => "./atmega32u4_bootloader.hex" );
     make("build");
     my $pwd = `pwd`;
     chomp($pwd);
@@ -88,9 +87,9 @@ sub build_atmega_firmware {
         "BOOTLOADER_PATH=" . $pwd . "/atmega32u4_bootloader.hex" );
 
     copy(   "output/Model01-Firmware/Model01-Firmware-latest.hex" => $OUTPUT
-          . "atmega32u4_firmware.hex" );
+          . "atmega32u4_firmware-".$git_tags{'Model01-Firmware'}.".hex" );
     copy( "output/Model01-Firmware/Model01-Firmware-latest-with-bootloader.hex"
-          => $OUTPUT . "atmega32u4_firmware_with_bootloader.hex" );
+          => $OUTPUT . "atmega32u4_firmware_with_bootloader-".$git_tags{'Model01-Firmware'}.".hex" );
 }
 
 sub copy {
