@@ -52,8 +52,11 @@ for my $repo_name ( keys %repos ) {
     my $repo_path = "repos/" . $repo_name;
     if ( !-d $repo_path . "/.git" ) {
         git( 'clone', $repos{$repo_name}, $repo_path );
-    }
-    set_cwd($repo_path);
+    	set_cwd($repo_path);
+    } else {
+    	set_cwd($repo_path);
+	git('pull');
+	}
     git( qw/ checkout/, $tag );
     git(qw/ submodule update --init --recursive/);
     git(qw/clean -xdf/);
