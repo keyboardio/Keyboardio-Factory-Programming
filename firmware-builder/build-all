@@ -3,6 +3,7 @@
 use warnings;
 use strict;
 use IPC::Run;
+use Cwd qw/abs_path cwd/;
 
 my $tag = shift @ARGV;
 
@@ -176,8 +177,7 @@ sub set_cwd {
 }
 
 sub get_cwd {
-    my $dir = `find \$(pwd)/ -type d -maxdepth 0`;
-    chomp($dir);
+    my $dir = abs_path(cwd()) ."/";
     return $dir;
 }
 
