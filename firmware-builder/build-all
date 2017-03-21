@@ -129,7 +129,6 @@ sub make_output {
 
 sub git {
     my @commands = (@_);
-    print "git " . join( " ", @commands ) . "\n";
     my ( $exitcode, $out, $err ) = run_command( 'git', @commands );
     return $out;
 }
@@ -170,6 +169,9 @@ sub run_command {
     if ( $exitcode != 0 ) {
         die "Exit code $exitcode";
     }
+	print join (" ",@cmd). "\n";
+	print  $out."\n" if ($out);
+	print $err."\n" if ($err);
     return ( $exitcode, $out, $err );
 }
 
