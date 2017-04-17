@@ -23,6 +23,12 @@ my %git_tags;
 my $ROOT = get_cwd();
 
 
+check_deps();
+
+
+
+
+
 mkdir("repos");
 mkdir("output");
 set_cwd("output");
@@ -164,7 +170,7 @@ sub run_command {
 
         # Could not run the program
         $exitcode = undef;
-        die "Could not run command";
+        die "Could not run command '".join(" ", @cmd)."'\n";
     }
     else {
         $exitcode = $? >> 8;
@@ -190,3 +196,12 @@ sub get_cwd {
     return $dir;
 }
 
+
+
+sub check_deps {
+	eval { run_command('avr-gcc')};
+	if (my $err = $@) {
+		die "avr-gcc does not appear to be installed: $err\n";
+	}
+
+}
