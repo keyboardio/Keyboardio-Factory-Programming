@@ -7,6 +7,10 @@ use Cwd qw/abs_path cwd/;
 
 my $tag = shift @ARGV;
 
+if (!$tag) {
+die "You need to specifiy a tag or branch name that exists on all four repos in order to build.\n" 
+}
+
 my %repos = (
     attiny_bootloader  => 'git://github.com/keyboardio/attiny_i2c_bootloader',
     attiny_firmware    => 'git://github.com/keyboardio/avr_keyscanner',
