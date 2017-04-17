@@ -170,12 +170,12 @@ sub run_command {
         $exitcode = $? >> 8;
     }
 
-    if ( $exitcode != 0 ) {
-        die "Exit code $exitcode";
-    }
 	print join (" ",@cmd). "\n";
 	print  $out."\n" if ($out);
 	print $err."\n" if ($err);
+    if ( $exitcode != 0 ) {
+        die "Exit code $exitcode";
+    }
     return ( $exitcode, $out, $err );
 }
 
