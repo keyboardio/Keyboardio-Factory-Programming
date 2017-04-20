@@ -86,8 +86,12 @@ sub get_code {
             set_cwd($repo_path);
             git('pull');
         }
-        git( qw/ checkout/, $args{'--tag'} );
-        git(qw/ submodule update --init --recursive/);
+
+	my $ref = $args{'--tag'};
+
+
+        git(qw/checkout/, $ref);
+        git(qw/submodule update --init --recursive/);
         git(qw/clean -xdf/);
         my $tag = git(qw"describe --abbrev=16 --dirty --always");
         chomp($tag);
