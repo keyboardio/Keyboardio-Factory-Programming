@@ -27,7 +27,19 @@ my %repos = (
     "Model01-Firmware" => 'git://github.com/keyboardio/Model01-Firmware'
 );
 
-my %files;
+my %files = (
+
+	build_details=>  'BUILD_DETAILS.txt',
+attiny_bootloader               => "attiny88_bootloader.hex",
+attiny_firmware_with_bootloader => "attiny88_firmware_with_bootloader.hex",
+attiny_firmware                 => "attiny88_firmware.hex",
+attiny_flasher_sketch_dir       => "attiny_flasher",
+attiny_flasher_sketch           => "attiny_flasher/attiny_flasher.ino",
+atmega_bootloader               => "atmega32u4_bootloader.hex",
+atmega_firmware                 => "atmega32u4_firmware.hex",
+atmega_firmware_with_bootloader => "atmega32u4_firmware_with_bootloader.hex"
+
+);
 
 my $ROOT = get_cwd();
 my $OUTPUT;
@@ -267,7 +279,7 @@ return get_cwd();
 }
 
 sub set_output_filenames {
-
+if ($args{'--hashes-in-file-names'}) {
 $files{'attiny_bootloader'}               = "attiny88_bootloader-" . $git_tags{'attiny_bootloader'} . ".hex";
 $files{'attiny_firmware_with_bootloader'} = "attiny88_firmware_with_bootloader-" . $git_tags{'attiny_firmware'} . ".hex";
 $files{'attiny_firmware'}                 = "attiny88_firmware-" . $git_tags{'attiny_firmware'} . ".hex";
@@ -276,4 +288,5 @@ $files{'attiny_flasher_sketch'}           = $files{'attiny_flasher_sketch_dir'} 
 $files{'atmega_bootloader'}               = "atmega32u4_bootloader-" . $git_tags{'arduino_boards'} . ".hex";
 $files{'atmega_firmware'}                 = "atmega32u4_firmware-" . $git_tags{'Model01-Firmware'} . ".hex";
 $files{'atmega_firmware_with_bootloader'} = "atmega32u4_firmware_with_bootloader-" . $git_tags{'Model01-Firmware'} . ".hex";
+}
 }
