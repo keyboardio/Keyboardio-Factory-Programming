@@ -5,9 +5,12 @@ use strict;
 use IPC::Run;
 use Cwd qw/abs_path cwd/;
 
-my $tag = shift @ARGV;
 
-if ( !$tag ) {
+my %args = (@ARGV);
+
+
+
+if ( !$args{'--tag'} ) {
     die "You need to specifiy a tag or branch name that exists on all four repos in order to build.\n";
 }
 
@@ -61,7 +64,7 @@ sub get_code {
             set_cwd($repo_path);
             git('pull');
         }
-        git( qw/ checkout/, $tag );
+        git( qw/ checkout/, $args{'--tag'} );
         git(qw/ submodule update --init --recursive/);
         git(qw/clean -xdf/);
         my $tag = git(qw"describe --abbrev=6 --dirty --always");
