@@ -30,17 +30,17 @@ my %repos = (
 my %files;
 
 my $ROOT = get_cwd();
+my $OUTPUT;
+
+eval {
 
 check_deps();
 
 mkdir("repos");
 
-my $OUTPUT = make_output_dir();
+$OUTPUT = make_output_dir();
 set_cwd($ROOT);
-
-
 get_code();
-
 set_output_filenames();
 build_attiny_bootloader();
 build_attiny_firmware();
@@ -48,9 +48,12 @@ build_atmega_bootloader();
 build_atmega_firmware();
 describe_build();
 
+};
 
-
-
+if (my $err = $@) {
+	print STDERR "Build failure. Here's the log:\n";
+	print STDERR join("\n",@build_log);
+}
 
 
 
@@ -203,8 +206,8 @@ sub run_command {
         $exitcode = $? >> 8;
     }
 
-    print $out. "\n" if ($out);
-    print $err. "\n" if ($err);
+    print $out. "\n" if ($out && $args{'--debug'});
+    print $err. "\n" if ($err && $args{'--debug'});
   
 
     push @build_log, "# ". join(" ",@cmd);
