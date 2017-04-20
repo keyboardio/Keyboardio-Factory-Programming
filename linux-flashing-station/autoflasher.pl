@@ -4,6 +4,17 @@ use strict;
 use IPC::Run;
 use Term::ReadKey;
 
+my $firmware_dir = "firmware/";
+
+my $firmware = { atmega32u4 => $firmware_dir. "atmega.hex",
+		 attiny88   => $firmware_dir. "attiny.hex"
+	};
+
+#http://eleccelerator.com/fusecalc/fusecalc.php?chip=attiny88&LOW=4E&HIGH=DD&EXTENDED=FE&LOCKBIT=FF
+my $fuses = { attiny88 => "-e -Ulfuse:w:0xCE:m -Uhfuse:w:0xDD:m -Uefuse:w:0xFE:m",
+	      atmega32u4 => "-e -Ulock:w:0xFF:m -Uefuse:w:0xcb:m -Uhfuse:w:0xd8:m -Ulfuse:w:0xff:m"
+};
+
 sub program_board {
     my $device = probe_device();
 
@@ -32,8 +43,7 @@ sub program_board {
 
 sub set_atmega_fuses {
     print "Fuse...";
-    my ( $output, $error, $exit ) = run_avrdude( "atmega32u4",
-        qw"-e -Ulock:w:0x3F:m -Uefuse:w:0xcb:m -Uhfuse:w:0xd8:m -Ulfuse:w:0xff:m"
+    my ( $output, $error, $exit ) = run_avrdude( "atmega32u4", split(/\s+/,$fuses->{'atmega32u4'})
     );
 
     if ($exit) {
@@ -47,7 +57,7 @@ sub set_atmega_fuses {
 sub flash_atmega_device {
     print "Program...";
     my ( $output, $error, $exit ) = run_avrdude( "atmega32u4",
-        qw"-B 1 -Uflash:w:firmware/model-01-atmega-with-bootloader-2017-02-17.hex:i -Ulock:w:0x2F:m"
+        qw"-B 1", "-Uflash:w:".  $firmware->{'atmega32u4'}.":i", qw"-Ulock:w:0xEF:m"
     );
     if ($exit) {
         error("FAIL");
@@ -59,9 +69,7 @@ sub flash_atmega_device {
 
 sub set_attiny_fuses {
     print "Fuse...";
-    my ( $output, $error, $exit ) = run_avrdude( "attiny88",
-        qw"-e -U lfuse:w:0xEE:m -U hfuse:w:0xDD:m -U efuse:w:0xFE:m -U lock:w:0x3F:m"
-    );
+    my ( $output, $error, $exit ) = run_avrdude( "attiny88", split(/\s+/,$fuses->{'attiny88'}) );
 
     if ($exit) {
         error("FAIL");
@@ -74,7 +82,7 @@ sub set_attiny_fuses {
 sub flash_attiny_device {
     print "Program...";
     my ( $output, $error, $exit ) = run_avrdude( "attiny88",
-        qw"-B 1 -U flash:w:firmware/model01-attiny-2016-11-07.hex:i" );
+        qw"-B 1 -U",  "flash:w:". $firmware->{'attiny88'} .":i" );
     if ($exit) {
         error("FAIL");
     }
@@ -91,7 +99,7 @@ sub run_avrdude {
 
     my @cmd = ( 'avrdude', '-v', "-p$device", "-cusbtiny", "-q", @command );
 
-    # print join(" ",@cmd);
+    #  print join(" ","\n",@cmd, "\n");
     eval {
         IPC::Run::run( \@cmd, \$in, \$out, \$err );
 
