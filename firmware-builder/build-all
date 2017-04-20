@@ -9,12 +9,11 @@ my %git_tags;
 my @build_log;
 
 my %args = (
-	
-	'--tag' => undef,	
-	
-	@ARGV);
 
+    '--tag' => undef,
 
+    @ARGV
+);
 
 if ( !$args{'--tag'} ) {
     die "You need to specifiy a tag or branch name that exists on all four repos in order to build.\n";
@@ -29,15 +28,15 @@ my %repos = (
 
 my %files = (
 
-	build_details=>  'BUILD_DETAILS.txt',
-attiny_bootloader               => "attiny88_bootloader.hex",
-attiny_firmware_with_bootloader => "attiny88_firmware_with_bootloader.hex",
-attiny_firmware                 => "attiny88_firmware.hex",
-attiny_flasher_sketch_dir       => "attiny_flasher",
-attiny_flasher_sketch           => "attiny_flasher/attiny_flasher.ino",
-atmega_bootloader               => "atmega32u4_bootloader.hex",
-atmega_firmware                 => "atmega32u4_firmware.hex",
-atmega_firmware_with_bootloader => "atmega32u4_firmware_with_bootloader.hex"
+    build_details                   => 'BUILD_DETAILS.txt',
+    attiny_bootloader               => "attiny88_bootloader.hex",
+    attiny_firmware_with_bootloader => "attiny88_firmware_with_bootloader.hex",
+    attiny_firmware                 => "attiny88_firmware.hex",
+    attiny_flasher_sketch_dir       => "attiny_flasher",
+    attiny_flasher_sketch           => "attiny_flasher/attiny_flasher.ino",
+    atmega_bootloader               => "atmega32u4_bootloader.hex",
+    atmega_firmware                 => "atmega32u4_firmware.hex",
+    atmega_firmware_with_bootloader => "atmega32u4_firmware_with_bootloader.hex"
 
 );
 
@@ -46,36 +45,35 @@ my $OUTPUT;
 
 eval {
 
-check_deps();
+    check_deps();
 
-mkdir("repos");
+    mkdir("repos");
 
-$OUTPUT = make_output_dir();
-set_cwd($ROOT);
-get_code();
-set_output_filenames();
-build_attiny_bootloader();
-build_attiny_firmware();
-build_atmega_bootloader();
-build_atmega_firmware();
-describe_build();
+    $OUTPUT = make_output_dir();
+    set_cwd($ROOT);
+    get_code();
+    set_output_filenames();
+    build_attiny_bootloader();
+    build_attiny_firmware();
+    build_atmega_bootloader();
+    build_atmega_firmware();
+    describe_build();
 
 };
 
-if (my $err = $@) {
-	print STDERR "Build failure. Here's the log:\n";
-	print STDERR join("\n",@build_log);
-	exit -1;
-} else {
-	print "Build succeeded.\n";
-	print "Output directory: ".$OUTPUT."\n";
-	print "Build log: ". $OUTPUT.$files{'build_details'}."\n";
+if ( my $err = $@ ) {
+    print STDERR "Build failure. Here's the log:\n";
+    print STDERR join( "\n", @build_log );
+    exit -1;
+}
+else {
+    print "Build succeeded.\n";
+    print "Output directory: " . $OUTPUT . "\n";
+    print "Build log: " . $OUTPUT . $files{'build_details'} . "\n";
 }
 
-
-
-
 sub get_code {
+
     # Check out repos as of tag $TAG:
     for my $repo_name ( keys %repos ) {
         set_cwd($ROOT);
@@ -97,48 +95,40 @@ sub get_code {
     }
 }
 
-
 sub describe_build {
-	set_cwd($OUTPUT);
-	open(my $out, ">", $files{'build_details'});
+    set_cwd($OUTPUT);
+    open( my $out, ">", $files{'build_details'} );
 
-	print $out "Firmware build completed at ".scalar gmtime()."\n";
-	print $out "\n\n";
+    print $out "Firmware build completed at " . scalar gmtime() . "\n";
+    print $out "\n\n";
 
+    print $out "=" x 60 . "\n";
+    for my $key ( keys %git_tags ) {
+        print $out "Repository:  " . $key . "\n" . "Repo URL:    " . $repos{$key} . "\n" . "Description: " . $git_tags{$key} . "\n\n";
+    }
 
-	print $out "="x60 . "\n";
-	for my $key (keys %git_tags) {
-		print $out 
-			"Repository:  " .$key."\n".
-			"Repo URL:    ".$repos{$key}."\n".
-			"Description: ".$git_tags{$key} ."\n\n";
-	};
+    print $out "=" x 60 . "\n";
+    print $out "Build tool invocation:\n";
+    print $out join( " ", $0, @ARGV );
 
+    print $out "\n\n\n";
+    print $out "=" x 60 . "\n";
+    print $out "Build Log:\n";
+    print $out join( "\n", @build_log );
 
-	print $out "="x60 . "\n";
-	print $out "Build tool invocation:\n";
-	print $out join(" ",$0, @ARGV);
+    print $out "\n\n\n\n";
+    print $out "=" x 60 . "\n";
 
-	print $out "\n\n\n";
-	print $out "="x60 . "\n";
-	print $out "Build Log:\n";
-	print $out join("\n",@build_log);
+    for my $cmd ( 'arduino-builder -version', 'avr-gcc -v', 'git --version', 'make -v', 'uname -a', 'hostname' ) {
+        my ( $exit, $stdout, $stderr ) = run_command( split( /\s+/, $cmd ) );
+        print $out "\n\n";
+        print $out "'$cmd':\n";
 
-	print $out "\n\n\n\n";
-	print $out "="x60 . "\n";
+        print $out $stdout || $stderr;
+    }
 
-
-	for my $cmd ('arduino-builder -version', 'avr-gcc -v', 'git --version', 'make -v', 'uname -a', 'hostname') {
-	my ($exit, $stdout, $stderr) = run_command(split(/\s+/,$cmd));
-	print $out "\n\n";
-	print $out "'$cmd':\n";
-	
-	print $out $stdout || $stderr;
-	} 
-
-
-	close $out;
-	set_cwd($ROOT);
+    close $out;
+    set_cwd($ROOT);
 }
 
 sub build_attiny_bootloader {
@@ -218,7 +208,7 @@ sub make {
 sub run_command {
     my @cmd = (@_);
     my ( $in, $out, $err, $exitcode );
-    print "# ".join(" ",@cmd) ."\n";
+    print "# " . join( " ", @cmd ) . "\n";
     eval {
         IPC::Run::run( \@cmd, \$in, \$out, \$err );
 
@@ -233,21 +223,20 @@ sub run_command {
         $exitcode = $? >> 8;
     }
 
-    print $out. "\n" if ($out && $args{'--debug'});
-    print $err. "\n" if ($err && $args{'--debug'});
-  
+    print $out. "\n" if ( $out && $args{'--debug'} );
+    print $err. "\n" if ( $err && $args{'--debug'} );
 
-    push @build_log, "# ". join(" ",@cmd);
-    if ($exitcode != 0) { 
-    push @build_log, "Non-zero exit code: ".$exitcode;
+    push @build_log, "# " . join( " ", @cmd );
+    if ( $exitcode != 0 ) {
+        push @build_log, "Non-zero exit code: " . $exitcode;
     }
     if ($out) {
-    push @build_log, $out;
+        push @build_log, $out;
     }
     if ($err) {
-    push @build_log, "STDERR:";
-    push @build_log, $err;
-	}
+        push @build_log, "STDERR:";
+        push @build_log, $err;
+    }
 
     if ( $exitcode != 0 ) {
         die "Exit code $exitcode";
@@ -277,31 +266,31 @@ sub check_deps {
 
 sub make_output_dir {
 
-mkdir("output");
-set_cwd("output");
-my $datestring = `date -Isec -u`;
-chomp($datestring);
-$datestring =~s/\+00:00$//;
-$datestring =~s /://g;
-mkdir($datestring);
-if (-l 'latest') {
-	run_command('rm', 'latest');
-}
-symlink $datestring, 'latest';
-chdir($datestring);
+    mkdir("output");
+    set_cwd("output");
+    my $datestring = `date -Isec -u`;
+    chomp($datestring);
+    $datestring =~ s/\+00:00$//;
+    $datestring =~ s /://g;
+    mkdir($datestring);
+    if ( -l 'latest' ) {
+        run_command( 'rm', 'latest' );
+    }
+    symlink $datestring, 'latest';
+    chdir($datestring);
 
-return get_cwd();
+    return get_cwd();
 }
 
 sub set_output_filenames {
-if ($args{'--hashes-in-file-names'}) {
-$files{'attiny_bootloader'}               = "attiny88_bootloader-" . $git_tags{'attiny_bootloader'} . ".hex";
-$files{'attiny_firmware_with_bootloader'} = "attiny88_firmware_with_bootloader-" . $git_tags{'attiny_firmware'} . ".hex";
-$files{'attiny_firmware'}                 = "attiny88_firmware-" . $git_tags{'attiny_firmware'} . ".hex";
-$files{'attiny_flasher_sketch_dir'}       = "attiny_flasher-" . $git_tags{'attiny_firmware'};
-$files{'attiny_flasher_sketch'}           = $files{'attiny_flasher_sketch_dir'} . "/attiny_flasher-" . $git_tags{'attiny_firmware'} . ".ino";
-$files{'atmega_bootloader'}               = "atmega32u4_bootloader-" . $git_tags{'arduino_boards'} . ".hex";
-$files{'atmega_firmware'}                 = "atmega32u4_firmware-" . $git_tags{'Model01-Firmware'} . ".hex";
-$files{'atmega_firmware_with_bootloader'} = "atmega32u4_firmware_with_bootloader-" . $git_tags{'Model01-Firmware'} . ".hex";
-}
+    if ( $args{'--hashes-in-file-names'} ) {
+        $files{'attiny_bootloader'}               = "attiny88_bootloader-" . $git_tags{'attiny_bootloader'} . ".hex";
+        $files{'attiny_firmware_with_bootloader'} = "attiny88_firmware_with_bootloader-" . $git_tags{'attiny_firmware'} . ".hex";
+        $files{'attiny_firmware'}                 = "attiny88_firmware-" . $git_tags{'attiny_firmware'} . ".hex";
+        $files{'attiny_flasher_sketch_dir'}       = "attiny_flasher-" . $git_tags{'attiny_firmware'};
+        $files{'attiny_flasher_sketch'}           = $files{'attiny_flasher_sketch_dir'} . "/attiny_flasher-" . $git_tags{'attiny_firmware'} . ".ino";
+        $files{'atmega_bootloader'}               = "atmega32u4_bootloader-" . $git_tags{'arduino_boards'} . ".hex";
+        $files{'atmega_firmware'}                 = "atmega32u4_firmware-" . $git_tags{'Model01-Firmware'} . ".hex";
+        $files{'atmega_firmware_with_bootloader'} = "atmega32u4_firmware_with_bootloader-" . $git_tags{'Model01-Firmware'} . ".hex";
+    }
 }
