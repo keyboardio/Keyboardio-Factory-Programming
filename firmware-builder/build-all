@@ -136,7 +136,7 @@ sub build_attiny_bootloader {
 
     set_cwd( repo_dir('attiny_bootloader'). "/TWI_Slave" );
     make(qw"all");
-    make_output( "twi_slave.hex", $files{'attiny_bootloader'} );
+    copy_built_file( "twi_slave.hex", $files{'attiny_bootloader'} );
 }
 
 sub build_attiny_firmware {
@@ -146,10 +146,10 @@ sub build_attiny_firmware {
     make("all");
     make("flashing-tool");
     mkdir( $OUTPUT_DIR . $files{'attiny_flasher_sketch_dir'} );
-    make_output( "out/flasher/flasher.ino", $files{'attiny_flasher_sketch'} );
+    copy_built_file( "out/flasher/flasher.ino", $files{'attiny_flasher_sketch'} );
 
-    make_output( "out/attiny88_factory.hex",    $files{'attiny_firmware_with_bootloader'} );
-    make_output( "out/attiny88_keyscanner.hex", $files{'attiny_firmware'} );
+    copy_built_file( "out/attiny88_factory.hex",    $files{'attiny_firmware_with_bootloader'} );
+    copy_built_file( "out/attiny88_keyscanner.hex", $files{'attiny_firmware'} );
 
 }
 
@@ -157,7 +157,7 @@ sub build_atmega_bootloader {
 
     set_cwd( repo_dir('arduino_boards'). "/bootloaders/caterina" );
     make("all");
-    make_output( "Caterina.hex" => $files{'atmega_bootloader'} );
+    copy_built_file( "Caterina.hex" => $files{'atmega_bootloader'} );
 
 }
 
@@ -167,9 +167,9 @@ sub build_atmega_firmware {
     make("build");
     make( "hex-with-bootloader", "BOOTLOADER_PATH=" . $OUTPUT_DIR . $files{'atmega_bootloader'} );
 
-    make_output( "output/Model01-Firmware/Model01-Firmware-latest.hex" => $files{'atmega_firmware'} );
+    copy_built_file( "output/Model01-Firmware/Model01-Firmware-latest.hex" => $files{'atmega_firmware'} );
 
-    make_output( "output/Model01-Firmware/Model01-Firmware-latest-with-bootloader.hex" => $files{'atmega_firmware_with_bootloader'} );
+    copy_built_file( "output/Model01-Firmware/Model01-Firmware-latest-with-bootloader.hex" => $files{'atmega_firmware_with_bootloader'} );
 
 }
 
@@ -179,7 +179,7 @@ sub copy {
     my ( $exitcode, $out, $err ) = run_command( "cp", $from, $to );
 }
 
-sub make_output {
+sub copy_built_file {
     my $from = shift;
     my $to   = shift;
     copy( $from => $OUTPUT_DIR . $to );
