@@ -22,10 +22,11 @@ if ( !$args{'--tag'} ) {
 }
 
 my %repos = (
-    attiny_bootloader  => 'git://github.com/keyboardio/attiny_i2c_bootloader',
-    attiny_firmware    => 'git://github.com/keyboardio/avr_keyscanner',
-    arduino_boards     => 'git://github.com/keyboardio/Arduino-Boards',
-    "Model01-Firmware" => 'git://github.com/keyboardio/Model01-Firmware'
+    attiny_bootloader  => {url=> 'git://github.com/keyboardio/attiny_i2c_bootloader', dir => 'attiny_bootloader' },
+    attiny_firmware    => {url=>'git://github.com/keyboardio/avr_keyscanner', dir => 'attiny_firmware',},
+
+    arduino_boards     => {url=>'git://github.com/keyboardio/Arduino-Boards', dir => 'arduino_boards'},
+    "atmega_firmware" => { url => 'git://github.com/keyboardio/Model01-Firmware', dir => 'Model01-Firmware'},
 );
 
 my %files = (
@@ -77,9 +78,9 @@ sub get_code {
     # Check out repos as of tag $TAG:
     for my $repo_name ( keys %repos ) {
         set_cwd($ROOT);
-        my $repo_path = "repos/" . $repo_name;
+        my $repo_path = "repos/" . $repos{$repo_name}->{dir};
         if ( !-d $repo_path . "/.git" ) {
-            git( 'clone', $repos{$repo_name}, $repo_path );
+            git( 'clone', $repos{$repo_name}->{url}, $repo_path );
             set_cwd($repo_path);
         }
         else {
@@ -133,14 +134,14 @@ sub describe_build {
 
 sub build_attiny_bootloader {
 
-    set_cwd( $ROOT . "repos/attiny_bootloader/TWI_Slave" );
+    set_cwd( repo_dir('attiny_bootloader'). "/TWI_Slave" );
     make(qw"all");
     make_output( "twi_slave.hex", $files{'attiny_bootloader'} );
 }
 
 sub build_attiny_firmware {
 
-    set_cwd( $ROOT . "repos/attiny_firmware" );
+    set_cwd( repo_dir('attiny_firmware'));
     copy( $OUTPUT_DIR . $files{'attiny_bootloader'}, "etc/bootloader.hex" );
     make("all");
     make("flashing-tool");
@@ -154,7 +155,7 @@ sub build_attiny_firmware {
 
 sub build_atmega_bootloader {
 
-    set_cwd( $ROOT . "repos/arduino_boards/bootloaders/caterina" );
+    set_cwd( repo_dir('arduino_boards'). "/bootloaders/caterina" );
     make("all");
     make_output( "Caterina.hex" => $files{'atmega_bootloader'} );
 
@@ -162,7 +163,7 @@ sub build_atmega_bootloader {
 
 sub build_atmega_firmware {
 
-    set_cwd( $ROOT . "repos/Model01-Firmware" );
+    set_cwd( repo_dir("atmega_firmware" ));
     make("build");
     make( "hex-with-bootloader", "BOOTLOADER_PATH=" . $OUTPUT_DIR . $files{'atmega_bootloader'} );
 
@@ -293,4 +294,9 @@ sub set_output_filenames {
         $files{'atmega_firmware'}                 = "atmega32u4_firmware-" . $git_tags{'Model01-Firmware'} . ".hex";
         $files{'atmega_firmware_with_bootloader'} = "atmega32u4_firmware_with_bootloader-" . $git_tags{'Model01-Firmware'} . ".hex";
     }
+}
+
+sub repo_dir {
+	my $repo = shift;
+	return $ROOT.'repos/'.$repos{$repo}->{dir};
 }
