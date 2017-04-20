@@ -7,6 +7,8 @@ use Cwd qw/abs_path cwd/;
 
 my %git_tags;
 my @build_log;
+my $ROOT = get_cwd();
+my $OUTPUT_DIR;
 
 my %args = (
 
@@ -40,8 +42,6 @@ my %files = (
 
 );
 
-my $ROOT = get_cwd();
-my $OUTPUT;
 
 eval {
 
@@ -49,7 +49,7 @@ eval {
 
     mkdir("repos");
 
-    $OUTPUT = make_output_dir();
+    $OUTPUT_DIR = make_output_dir();
     set_cwd($ROOT);
     get_code();
     set_output_filenames();
@@ -68,8 +68,8 @@ if ( my $err = $@ ) {
 }
 else {
     print "Build succeeded.\n";
-    print "Output directory: " . $OUTPUT . "\n";
-    print "Build log: " . $OUTPUT . $files{'build_details'} . "\n";
+    print "Output directory: " . $OUTPUT_DIR . "\n";
+    print "Build log: " . $OUTPUT_DIR . $files{'build_details'} . "\n";
 }
 
 sub get_code {
@@ -96,7 +96,7 @@ sub get_code {
 }
 
 sub describe_build {
-    set_cwd($OUTPUT);
+    set_cwd($OUTPUT_DIR);
     open( my $out, ">", $files{'build_details'} );
 
     print $out "Firmware build completed at " . scalar gmtime() . "\n";
@@ -141,10 +141,10 @@ sub build_attiny_bootloader {
 sub build_attiny_firmware {
 
     set_cwd( $ROOT . "repos/attiny_firmware" );
-    copy( $OUTPUT . $files{'attiny_bootloader'}, "etc/bootloader.hex" );
+    copy( $OUTPUT_DIR . $files{'attiny_bootloader'}, "etc/bootloader.hex" );
     make("all");
     make("flashing-tool");
-    mkdir( $OUTPUT . $files{'attiny_flasher_sketch_dir'} );
+    mkdir( $OUTPUT_DIR . $files{'attiny_flasher_sketch_dir'} );
     make_output( "out/flasher/flasher.ino", $files{'attiny_flasher_sketch'} );
 
     make_output( "out/attiny88_factory.hex",    $files{'attiny_firmware_with_bootloader'} );
@@ -164,7 +164,7 @@ sub build_atmega_firmware {
 
     set_cwd( $ROOT . "repos/Model01-Firmware" );
     make("build");
-    make( "hex-with-bootloader", "BOOTLOADER_PATH=" . $OUTPUT . $files{'atmega_bootloader'} );
+    make( "hex-with-bootloader", "BOOTLOADER_PATH=" . $OUTPUT_DIR . $files{'atmega_bootloader'} );
 
     make_output( "output/Model01-Firmware/Model01-Firmware-latest.hex" => $files{'atmega_firmware'} );
 
@@ -181,7 +181,7 @@ sub copy {
 sub make_output {
     my $from = shift;
     my $to   = shift;
-    copy( $from => $OUTPUT . $to );
+    copy( $from => $OUTPUT_DIR . $to );
 }
 
 sub git {
