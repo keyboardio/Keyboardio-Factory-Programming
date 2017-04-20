@@ -136,6 +136,8 @@ sub prompt_to_start {
         print "\n\n\nConnect a board and then press any key.\n";
 	ReadMode(4);
         my $nothing = ReadKey();
+	ReadMode(0);
+	if ($nothing eq '_') { exit(0)};
         eval { program_board(); };
     }
 
