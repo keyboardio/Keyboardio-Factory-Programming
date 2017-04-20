@@ -69,7 +69,7 @@ if (my $err = $@) {
 } else {
 	print "Build succeeded.\n";
 	print "Output directory: ".$OUTPUT."\n";
-	print "Build log: ". $OUTPUT."/".$files{'build_details'}."\n";
+	print "Build log: ". $OUTPUT.$files{'build_details'}."\n";
 }
 
 
@@ -116,7 +116,12 @@ sub describe_build {
 
 
 	print $out "="x60 . "\n";
-	print $out "\n\nBuild Log:\n";
+	print $out "Build tool invocation:\n";
+	print $out join(" ",$0, @ARGV);
+
+	print $out "\n\n\n";
+	print $out "="x60 . "\n";
+	print $out "Build Log:\n";
 	print $out join("\n",@build_log);
 
 	print $out "\n\n\n\n";
