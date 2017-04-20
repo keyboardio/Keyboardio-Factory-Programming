@@ -114,7 +114,6 @@ sub build_atmega_firmware {
 sub copy {
     my $from = shift;
     my $to   = shift;
-    print "cp $from $to\n";
     my ( $exitcode, $out, $err ) = run_command( "cp", $from, $to );
 }
 
@@ -133,7 +132,6 @@ sub git {
 sub make {
     my @commands = (@_);
     my ( $exitcode, $out, $err ) = run_command( 'make', @commands );
-    print join( " ", 'make', @commands ) . "\n";
     if ($exitcode) {
         print "Ran command: " . join( " ", 'make', @commands );
         print "$err\n";
@@ -149,6 +147,7 @@ sub make {
 sub run_command {
     my @cmd = (@_);
     my ( $in, $out, $err, $exitcode );
+    print "# ".join(" ",@cmd) ."\n";
     eval {
         IPC::Run::run( \@cmd, \$in, \$out, \$err );
 
@@ -163,7 +162,6 @@ sub run_command {
         $exitcode = $? >> 8;
     }
 
-    print join( " ", @cmd ) . "\n";
     print $out. "\n" if ($out);
     print $err. "\n" if ($err);
     if ( $exitcode != 0 ) {
@@ -174,7 +172,7 @@ sub run_command {
 
 sub set_cwd {
     my $dir = shift;
-    print "\ncd $dir\n";
+    print "# cd $dir\n";
     chdir($dir);
 }
 
