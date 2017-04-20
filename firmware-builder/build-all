@@ -51,7 +51,6 @@ eval {
     mkdir("repos");
 
     $OUTPUT_DIR = make_output_dir();
-    set_cwd($ROOT);
     get_code();
     set_output_filenames();
     build_attiny_bootloader();
