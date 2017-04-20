@@ -96,79 +96,45 @@ sub get_code {
     }
 }
 
-sub describe_build {
-    set_cwd($OUTPUT_DIR);
-    open( my $out, ">", $files{'build_details'} );
-
-    print $out "Firmware build completed at " . scalar gmtime() . "\n";
-    print $out "\n\n";
-
-    print $out "=" x 60 . "\n";
-    for my $key ( keys %git_tags ) {
-        print $out "Repository:  " . $key . "\n" . "Repo URL:    " . $repos{$key} . "\n" . "Description: " . $git_tags{$key} . "\n\n";
-    }
-
-    print $out "=" x 60 . "\n";
-    print $out "Build tool invocation:\n";
-    print $out join( " ", $0, @ARGV );
-
-    print $out "\n\n\n";
-    print $out "=" x 60 . "\n";
-    print $out "Build Log:\n";
-    print $out join( "\n", @build_log );
-
-    print $out "\n\n\n\n";
-    print $out "=" x 60 . "\n";
-
-    for my $cmd ( 'arduino-builder -version', 'avr-gcc -v', 'git --version', 'make -v', 'uname -a', 'hostname' ) {
-        my ( $exit, $stdout, $stderr ) = run_command( split( /\s+/, $cmd ) );
-        print $out "\n\n";
-        print $out "'$cmd':\n";
-
-        print $out $stdout || $stderr;
-    }
-
-    close $out;
-    set_cwd($ROOT);
-}
 
 sub build_attiny_bootloader {
-
     set_cwd( repo_dir('attiny_bootloader'). "/TWI_Slave" );
+
     make(qw"all");
+
     copy_built_file( "twi_slave.hex", $files{'attiny_bootloader'} );
 }
 
 sub build_attiny_firmware {
-
     set_cwd( repo_dir('attiny_firmware'));
     copy( $OUTPUT_DIR . $files{'attiny_bootloader'}, "etc/bootloader.hex" );
+
     make("all");
     make("flashing-tool");
+
     mkdir( $OUTPUT_DIR . $files{'attiny_flasher_sketch_dir'} );
     copy_built_file( "out/flasher/flasher.ino", $files{'attiny_flasher_sketch'} );
-
     copy_built_file( "out/attiny88_factory.hex",    $files{'attiny_firmware_with_bootloader'} );
     copy_built_file( "out/attiny88_keyscanner.hex", $files{'attiny_firmware'} );
 
 }
 
 sub build_atmega_bootloader {
-
     set_cwd( repo_dir('arduino_boards'). "/bootloaders/caterina" );
+
     make("all");
+
     copy_built_file( "Caterina.hex" => $files{'atmega_bootloader'} );
 
 }
 
 sub build_atmega_firmware {
-
     set_cwd( repo_dir("atmega_firmware" ));
+
     make("build");
     make( "hex-with-bootloader", "BOOTLOADER_PATH=" . $OUTPUT_DIR . $files{'atmega_bootloader'} );
 
     copy_built_file( "output/Model01-Firmware/Model01-Firmware-latest.hex" => $files{'atmega_firmware'} );
-
     copy_built_file( "output/Model01-Firmware/Model01-Firmware-latest-with-bootloader.hex" => $files{'atmega_firmware_with_bootloader'} );
 
 }
@@ -299,4 +265,41 @@ sub set_output_filenames {
 sub repo_dir {
 	my $repo = shift;
 	return $ROOT.'repos/'.$repos{$repo}->{dir};
+}
+
+
+sub describe_build {
+    set_cwd($OUTPUT_DIR);
+    open( my $out, ">", $files{'build_details'} );
+
+    print $out "Firmware build completed at " . scalar gmtime() . "\n";
+    print $out "\n\n";
+
+    print $out "=" x 60 . "\n";
+    for my $key ( keys %git_tags ) {
+        print $out "Repository:  " . $key . "\n" . "Repo URL:    " . $repos{$key} . "\n" . "Description: " . $git_tags{$key} . "\n\n";
+    }
+
+    print $out "=" x 60 . "\n";
+    print $out "Build tool invocation:\n";
+    print $out join( " ", $0, @ARGV );
+
+    print $out "\n\n\n";
+    print $out "=" x 60 . "\n";
+    print $out "Build Log:\n";
+    print $out join( "\n", @build_log );
+
+    print $out "\n\n\n\n";
+    print $out "=" x 60 . "\n";
+
+    for my $cmd ( 'arduino-builder -version', 'avr-gcc -v', 'git --version', 'make -v', 'uname -a', 'hostname' ) {
+        my ( $exit, $stdout, $stderr ) = run_command( split( /\s+/, $cmd ) );
+        print $out "\n\n";
+        print $out "'$cmd':\n";
+
+        print $out $stdout || $stderr;
+    }
+
+    close $out;
+    set_cwd($ROOT);
 }
