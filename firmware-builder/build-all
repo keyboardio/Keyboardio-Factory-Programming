@@ -3,6 +3,7 @@
 use warnings;
 use strict;
 use IPC::Run;
+use Getopt::Long;
 use Cwd qw/abs_path cwd/;
 
 my %git_tags;
@@ -10,17 +11,24 @@ my @build_log;
 my $ROOT = get_cwd();
 my $OUTPUT_DIR;
 
-my %args = (
+my %args;
 
-    '--tag' => undef,
-    '--attiny-bootloader-ref' => undef,
-    '--attiny-firmware-ref' => undef,
-    '--atmega-firmware-ref' => undef,
-    '--arduino-boards-ref' => undef,
-    @ARGV
+GetOptions(\%args,
+    'tag=s',
+    'attiny-bootloader-ref=s',
+    'attiny-firmware-ref=s',
+    'atmega-firmware-ref=s',
+    'arduino-boards-ref=s',
+    'hashes-in-file-names',
+    'debug',
+    'help'
 );
 
-if ( !$args{'--tag'} ) {
+if ($args{'help'}) {
+    die "Jesse needs to doc some help";
+}
+
+if ( !$args{'tag'} ) {
     die "You need to specifiy a tag or branch name that exists on all four repos in order to build.\n";
 }
 
@@ -90,9 +98,9 @@ sub get_code {
             git('pull');
         }
 
-	my $ref = $args{'--tag'};
+	my $ref = $args{'tag'};
 
-	if (my $repo_refname = $args{'--'.$repo_name.'-ref'} ) {
+	if (my $repo_refname = $args{$repo_name.'-ref'} ) {
 		$ref = $repo_refname;
 	}
         git(qw/checkout/, $ref);
@@ -198,8 +206,8 @@ sub run_command {
         $exitcode = $? >> 8;
     }
 
-    print $out. "\n" if ( $out && $args{'--debug'} );
-    print $err. "\n" if ( $err && $args{'--debug'} );
+    print $out. "\n" if ( $out && $args{'debug'} );
+    print $err. "\n" if ( $err && $args{'debug'} );
 
     push @build_log, "# " . join( " ", @cmd );
     if ( $exitcode != 0 ) {
@@ -258,7 +266,7 @@ sub make_output_dir {
 }
 
 sub set_output_filenames {
-    if ( $args{'--hashes-in-file-names'} ) {
+    if ( $args{'hashes-in-file-names'} ) {
         $files{'attiny_bootloader'}               = "attiny88_bootloader-" . $git_tags{'attiny_bootloader'} . ".hex";
         $files{'attiny_firmware_with_bootloader'} = "attiny88_firmware_with_bootloader-" . $git_tags{'attiny_firmware'} . ".hex";
         $files{'attiny_firmware'}                 = "attiny88_firmware-" . $git_tags{'attiny_firmware'} . ".hex";
