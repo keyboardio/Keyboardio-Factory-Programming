@@ -9,6 +9,7 @@ use Cwd qw/abs_path cwd/;
 my %git_tags;
 my @build_log;
 my $ROOT = get_cwd();
+my $FLASHER_FIRMWARE_DIR = $ROOT."../linux-flashing-station/firmware";
 my $OUTPUT_DIR;
 
 my %args;
@@ -20,6 +21,7 @@ GetOptions(\%args,
     'atmega-firmware-ref=s',
     'arduino-boards-ref=s',
     'hashes-in-file-names',
+    'install',
     'debug',
     'help'
 );
@@ -69,6 +71,10 @@ eval {
     build_atmega_bootloader();
     build_atmega_firmware();
     describe_build();
+    
+    if ($args{install}) {
+	install_to_flasher();
+    }
 
 };
 
@@ -318,4 +324,9 @@ sub describe_build {
 
     close $out;
     set_cwd($ROOT);
+}
+
+sub install_to_flasher {
+	copy($OUTPUT_DIR. $files{'atmega_firmware_with_bootloader'} => $FLASHER_FIRMWARE_DIR."/atmega.hex");
+	copy($OUTPUT_DIR. $files{'attiny_firmware_with_bootloader'} => $FLASHER_FIRMWARE_DIR."/attiny.hex");
 }
