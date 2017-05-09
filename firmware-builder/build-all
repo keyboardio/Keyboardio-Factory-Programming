@@ -10,6 +10,7 @@ my %git_tags;
 my @build_log;
 my $ROOT = get_cwd();
 my $FLASHER_FIRMWARE_DIR = $ROOT."../linux-flashing-station/firmware";
+my $WINDOWS_FLASHER_FIRMWARE_DIR = $ROOT."../windows-flashing-tools/firmware";
 my $OUTPUT_DIR;
 
 my %args;
@@ -332,4 +333,6 @@ sub describe_build {
 sub install_to_flasher {
 	copy($OUTPUT_DIR. $files{'atmega_firmware_with_bootloader'} => $FLASHER_FIRMWARE_DIR."/atmega.hex");
 	copy($OUTPUT_DIR. $files{'attiny_firmware_with_bootloader'} => $FLASHER_FIRMWARE_DIR."/attiny.hex");
+	copy($OUTPUT_DIR. $files{'atmega_firmware_with_bootloader'} => $WINDOWS_FLASHER_FIRMWARE_DIR."/atmega.hex");
+	copy($OUTPUT_DIR. $files{'attiny_firmware_with_bootloader'} => $WINDOWS_FLASHER_FIRMWARE_DIR."/attiny.hex");
 }
