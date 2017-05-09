@@ -79,7 +79,9 @@ eval {
 };
 
 if ( my $err = $@ ) {
-    print STDERR "Build failure. Here's the log:\n";
+    print STDERR "Build failure.\n";
+    print STDERR "The problem was: $err\n";
+    print STDERR "Here's the log:\n";
     print STDERR join( "\n", @build_log );
     exit -1;
 }
