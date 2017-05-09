@@ -137,9 +137,10 @@ sub build_attiny_firmware {
     make("flashing-tool");
 
     mkdir( $OUTPUT_DIR . $files{'attiny_flasher_sketch_dir'} );
-    copy_built_file( "out/flasher/flasher.ino", $files{'attiny_flasher_sketch'} );
-    copy_built_file( "out/attiny88_factory.hex",    $files{'attiny_firmware_with_bootloader'} );
-    copy_built_file( "out/attiny88_keyscanner.hex", $files{'attiny_firmware'} );
+    copy_built_file( "out/attiny_flasher/Makefile", 	$files{'attiny_flasher_sketch_dir'}."/Makefile");
+    copy_built_file( "out/attiny_flasher/attiny_flasher.ino", 	$files{'attiny_flasher_sketch'} );
+    copy_built_file( "out/attiny88_factory.hex",    	$files{'attiny_firmware_with_bootloader'} );
+    copy_built_file( "out/attiny88_keyscanner.hex", 	$files{'attiny_firmware'} );
 
 }
 
