@@ -11,7 +11,7 @@ my $firmware = { atmega32u4 => $firmware_dir. "atmega.hex",
 	};
 
 #http://eleccelerator.com/fusecalc/fusecalc.php?chip=attiny88&LOW=4E&HIGH=DD&EXTENDED=FE&LOCKBIT=FF
-my $fuses = { attiny88 => "-e -Ulfuse:w:0xCE:m -Uhfuse:w:0xDD:m -Uefuse:w:0xFE:m",
+my $fuses = { attiny88 => "-e -Ulfuse:w:0xeE:m -Uhfuse:w:0xDD:m -Uefuse:w:0xFE:m",
 	      atmega32u4 => "-e -Ulock:w:0xFF:m -Uefuse:w:0xcb:m -Uhfuse:w:0xd8:m -Ulfuse:w:0xff:m"
 };
 
