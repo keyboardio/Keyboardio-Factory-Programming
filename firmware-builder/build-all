@@ -105,6 +105,7 @@ sub get_code {
         }
         else {
             set_cwd($repo_path);
+            git(qw'fetch --all');
             git('pull');
         }
 
@@ -306,7 +307,7 @@ sub describe_build {
 
     print $out "=" x 60 . "\n";
     for my $key ( keys %git_tags ) {
-        print $out "Repository:  " . $key . "\n" . "Repo URL:    " . $repos{$key} . "\n" . "Description: " . $git_tags{$key} . "\n\n";
+        print $out "Repository:  " . $key . "\n" . "Repo URL:    " . $repos{$key}->{url} . "\n" . "Description: " . $git_tags{$key} . "\n\n";
     }
 
     print $out "=" x 60 . "\n";
