@@ -268,10 +268,8 @@ sub make_output_dir {
 
     mkdir("output");
     set_cwd("output");
-    my $datestring = `date -Isec -u`;
+    my $datestring = `date -u "+%Y-%m-%dT%H:%M:%S"`;
     chomp($datestring);
-    $datestring =~ s/\+00:00$//;
-    $datestring =~ s /://g;
     mkdir($datestring);
     if ( -l 'latest' ) {
         run_command( 'rm', 'latest' );
