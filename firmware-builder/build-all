@@ -158,7 +158,7 @@ sub build_atmega_bootloader {
 
 sub build_atmega_firmware {
 
-    my $version_information = "\"Sketch: ".$git_tags{'Model01-Firmware'}."; Libraries: ".$git_tags{'arduino_boards'}."\""; 
+    my $version_information = '"sketch:'.$git_tags{'atmega-firmware'}.";libraries:".$git_tags{'arduino-boards'}.'"'; 
 
     set_cwd( repo_dir("atmega-firmware" ));
     
@@ -282,14 +282,14 @@ sub make_output_dir {
 
 sub set_output_filenames {
     if ( $args{'hashes-in-file-names'} ) {
-        $files{'attiny_bootloader'}               = "attiny88_bootloader-" . $git_tags{'attiny_bootloader'} . ".hex";
-        $files{'attiny_firmware_with_bootloader'} = "attiny88_firmware_with_bootloader-" . $git_tags{'attiny_firmware'} . ".hex";
-        $files{'attiny_firmware'}                 = "attiny88_firmware-" . $git_tags{'attiny_firmware'} . ".hex";
-        $files{'attiny_flasher_sketch_dir'}       = "attiny_flasher-" . $git_tags{'attiny_firmware'};
-        $files{'attiny_flasher_sketch'}           = $files{'attiny_flasher_sketch_dir'} . "/attiny_flasher-" . $git_tags{'attiny_firmware'} . ".ino";
-        $files{'atmega_bootloader'}               = "atmega32u4_bootloader-" . $git_tags{'arduino_boards'} . ".hex";
-        $files{'atmega_firmware'}                 = "atmega32u4_firmware-" . $git_tags{'Model01-Firmware'} . ".hex";
-        $files{'atmega_firmware_with_bootloader'} = "atmega32u4_firmware_with_bootloader-" . $git_tags{'Model01-Firmware'} . ".hex";
+        $files{'attiny_bootloader'}               = "attiny88_bootloader-" . $git_tags{'attiny-bootloader'} . ".hex";
+        $files{'attiny_firmware_with_bootloader'} = "attiny88_firmware_with_bootloader-" . $git_tags{'attiny-firmware'} . ".hex";
+        $files{'attiny_firmware'}                 = "attiny88_firmware-" . $git_tags{'attiny-firmware'} . ".hex";
+        $files{'attiny_flasher_sketch_dir'}       = "attiny_flasher-" . $git_tags{'attiny-firmware'};
+        $files{'attiny_flasher_sketch'}           = $files{'attiny_flasher_sketch_dir'} . "/attiny_flasher-" . $git_tags{'attiny-firmware'} . ".ino";
+        $files{'atmega_bootloader'}               = "atmega32u4_bootloader-" . $git_tags{'arduino-boards'} . ".hex";
+        $files{'atmega_firmware'}                 = "atmega32u4_firmware-" . $git_tags{'atmega-firmware'} . ".hex";
+        $files{'atmega_firmware_with_bootloader'} = "atmega32u4_firmware_with_bootloader-" . $git_tags{'atmega-firmware'} . ".hex";
     }
 }
 
