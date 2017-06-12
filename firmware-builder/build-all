@@ -117,7 +117,7 @@ sub get_code {
         git(qw/checkout/, $ref);
         git(qw/submodule update --init --recursive/);
         git(qw/clean -xdf/);
-        my $tag = git(qw"describe --abbrev=16 --dirty --always");
+        my $tag = git(qw"describe --abbrev=6 --dirty --always");
         chomp($tag);
         $git_tags{$repo_name} = $tag;
     }
@@ -158,7 +158,7 @@ sub build_atmega_bootloader {
 
 sub build_atmega_firmware {
 
-    my $version_information = '"sketch:'.$git_tags{'atmega-firmware'}.";libraries:".$git_tags{'arduino-boards'}.'"'; 
+    my $version_information = '"\"sketch:'.$git_tags{'atmega-firmware'}.";lib:".$git_tags{'arduino-boards'}.'\""'; 
 
     set_cwd( repo_dir("atmega-firmware" ));
     
