@@ -158,12 +158,12 @@ sub build_atmega_bootloader {
 
 sub build_atmega_firmware {
 
-    my $version_information = '"\"sketch:'.$git_tags{'atmega-firmware'}.";lib:".$git_tags{'arduino-boards'}.'\""'; 
-
+    my $version_information = '"sketch:'.$git_tags{'atmega-firmware'}.";lib:".$git_tags{'arduino-boards'}.'"'; 
+    my $version_cflags = "LOCAL_CFLAGS='-DBUILD_INFORMATION=".$version_information."'";
     set_cwd( repo_dir("atmega-firmware" ));
     
-    make("build", 'LOCAL_CFLAGS=-DVERSION_INFORMATION='.$version_information);
-    make( "hex-with-bootloader", "BOOTLOADER_PATH=" . $OUTPUT_DIR . $files{'atmega_bootloader'} );
+    make("build", $version_cflags);
+    make( "hex-with-bootloader", "BOOTLOADER_PATH=" . $OUTPUT_DIR . $files{'atmega_bootloader'}, $version_cflags );
 
     copy_built_file( "output/Model01-Firmware/Model01-Firmware-latest.hex" => $files{'atmega_firmware'} );
     copy_built_file( "output/Model01-Firmware/Model01-Firmware-latest-with-bootloader.hex" => $files{'atmega_firmware_with_bootloader'} );
