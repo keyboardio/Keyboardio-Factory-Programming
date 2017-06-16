@@ -93,10 +93,21 @@ sub flash_attiny_device {
 
 }
 
+sub reset_usb_bus {
+
+# This total hack resets the USB bus so that if the avrisp got wedged, it forces a reset and starts things up again.
+# Source:
+# https://unix.stackexchange.com/questions/208129/how-to-power-cycle-a-usb-device-on-beagleboneblack
+    system("echo 1 > /sys/bus/usb/devices/usb1/bConfigurationValue");
+    sleep(1);
+}
+
 sub run_avrdude {
     my $device  = shift;
     my @command = @_;
     my ( $in, $out, $err, $exitcode );
+
+    reset_usb_bus();
 
     my @cmd = ( 'avrdude', '-v', "-p$device", "-cusbtiny", "-q", @command );
 
