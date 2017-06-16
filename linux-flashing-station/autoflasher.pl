@@ -120,6 +120,7 @@ sub run_avrdude {
 
     };
     if ($@) {
+        warn($@);
 
         # Could not run the program
         $exitcode = undef;
@@ -163,6 +164,9 @@ sub prompt_to_start {
         if ( $nothing eq '_' ) { exit(0) }
         system("clear");
         eval { program_board(); };
+        if ( my $msg = $@ ) {
+            warn "ERROR: $msg";
+        }
     }
 
 }
