@@ -6,9 +6,10 @@ use Term::ReadKey;
 
 my $firmware_dir = "firmware/";
 
-my $firmware = { atmega32u4 => $firmware_dir. "atmega.hex",
-		 attiny88   => $firmware_dir. "attiny.hex"
-	};
+my $firmware = {
+    atmega32u4 => $firmware_dir . "atmega.hex",
+    attiny88   => $firmware_dir . "attiny.hex"
+};
 
 #http://eleccelerator.com/fusecalc/fusecalc.php?chip=attiny88&LOW=4E&HIGH=DD&EXTENDED=FE&LOCKBIT=FF
 my $fuses = { attiny88 => "-e -Ulfuse:w:0xeE:m -Uhfuse:w:0xDD:m -Uefuse:w:0xFE:m",
@@ -23,29 +24,28 @@ sub program_board {
     # none found: none;
 
     if ( $device =~ /0x1e9587/i ) {
-        print "\n\nFound ATMega32U4\n\n";
+        print "\n\nI see ATMega32U4\n\n";
         set_atmega_fuses();
         flash_atmega_device();
-        print "DONE!\n\n";
+        print "OK! DONE! \n\n";
 
     }
     elsif ( $device =~ /0x1e9311/i ) {
-        print "\n\nFound ATTiny88\n\n";
+        print "\n\nI see ATTiny88\n\n";
         set_attiny_fuses();
         flash_attiny_device();
-        print "DONE!\n\n";
+        print "OK! DONE!\n\n";
     }
     else {
-        print "\n\nERROR: NO board\n\n";
+        print "\n\nERROR: I do not see a chip\n\n";
     }
 
 }
 
 sub set_atmega_fuses {
-    print "Fuse...";
-    my ( $output, $error, $exit ) = run_avrdude( "atmega32u4", split(/\s+/,$fuses->{'atmega32u4'})
-    );
-
+    print "Setting fuses...";
+    my ( $output, $error, $exit ) =
+      run_avrdude( "atmega32u4", split( /\s+/, $fuses->{'atmega32u4'} ) );
     if ($exit) {
         error("could not set fuses on atmega");
     }
@@ -60,7 +60,7 @@ sub flash_atmega_device {
         qw"-B 1", "-Uflash:w:".  $firmware->{'atmega32u4'}.":i", qw"-Ulock:w:0xEF:m"
     );
     if ($exit) {
-        error("FAIL");
+        error("FAIL - flashing ATMega32u4: \n$error\n");
     }
     else {
         print "OK \n";
@@ -68,11 +68,12 @@ sub flash_atmega_device {
 }
 
 sub set_attiny_fuses {
-    print "Fuse...";
-    my ( $output, $error, $exit ) = run_avrdude( "attiny88", split(/\s+/,$fuses->{'attiny88'}) );
+    print "Setting fuses...";
+    my ( $output, $error, $exit ) =
+      run_avrdude( "attiny88", split( /\s+/, $fuses->{'attiny88'} ) );
 
     if ($exit) {
-        error("FAIL");
+        error("FAIL - setting attiny88 fuses: \n$error\n");
     }
     else {
         print "OK\n";
@@ -80,11 +81,11 @@ sub set_attiny_fuses {
 }
 
 sub flash_attiny_device {
-    print "Program...";
+    print "Putting program on chip...";
     my ( $output, $error, $exit ) = run_avrdude( "attiny88",
-        qw"-B 1 -U",  "flash:w:". $firmware->{'attiny88'} .":i" );
+        qw"-B 1 -U", "flash:w:" . $firmware->{'attiny88'} . ":i" );
     if ($exit) {
-        error("FAIL");
+        error("FAIL - flashing attiny88: \n$error\n");
     }
     else {
         print "OK\n";
@@ -141,11 +142,12 @@ sub error {
 
 sub prompt_to_start {
     while (1) {
-        print "\n\n\nConnect a board and then press any key.\n";
-	ReadMode(4);
+        print "\n\n\nConnect a board. Then press a key.\n";
+        ReadMode(4);
         my $nothing = ReadKey();
-	ReadMode(0);
-	if ($nothing eq '_') { exit(0)};
+        ReadMode(0);
+        if ( $nothing eq '_' ) { exit(0) }
+        system("clear");
         eval { program_board(); };
     }
 
