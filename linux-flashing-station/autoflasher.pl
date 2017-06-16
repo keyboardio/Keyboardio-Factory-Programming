@@ -156,6 +156,8 @@ sub error {
 }
 
 sub prompt_to_start {
+    sleep(10);
+    system("clear");
     while (1) {
         print "\n\n\nConnect a board. Then press a key.\n";
         ReadMode(4);
