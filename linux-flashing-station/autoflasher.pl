@@ -12,8 +12,10 @@ my $firmware = {
 };
 
 #http://eleccelerator.com/fusecalc/fusecalc.php?chip=attiny88&LOW=4E&HIGH=DD&EXTENDED=FE&LOCKBIT=FF
-my $fuses = { attiny88 => "-e -Ulfuse:w:0xeE:m -Uhfuse:w:0xDD:m -Uefuse:w:0xFE:m",
-	      atmega32u4 => "-e -Ulock:w:0xFF:m -Uefuse:w:0xcb:m -Uhfuse:w:0xd8:m -Ulfuse:w:0xff:m"
+my $fuses = {
+    attiny88 => "-e -Ulfuse:w:0xeE:m -Uhfuse:w:0xDD:m -Uefuse:w:0xFE:m",
+    atmega32u4 =>
+      "-e -Ulock:w:0x3F:m -Uefuse:w:0xcb:m -Uhfuse:w:0xd8:m -Ulfuse:w:0xff:m"
 };
 
 sub program_board {
@@ -55,9 +57,10 @@ sub set_atmega_fuses {
 }
 
 sub flash_atmega_device {
-    print "Program...";
-    my ( $output, $error, $exit ) = run_avrdude( "atmega32u4",
-        qw"-B 1", "-Uflash:w:".  $firmware->{'atmega32u4'}.":i", qw"-Ulock:w:0xEF:m"
+    print "Putting program on chip...";
+    my ( $output, $error, $exit ) = run_avrdude(
+        "atmega32u4",                                    qw"-B 1",
+        "-Uflash:w:" . $firmware->{'atmega32u4'} . ":i", qw"-Ulock:w:0x3F:m"
     );
     if ($exit) {
         error("FAIL - flashing ATMega32u4: \n$error\n");
