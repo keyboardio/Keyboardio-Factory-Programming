@@ -106,7 +106,6 @@ sub get_code {
         else {
             set_cwd($repo_path);
             git(qw'fetch --all');
-            git('pull');
         }
 
 	my $ref = $args{'tag'};
@@ -153,7 +152,7 @@ sub build_atmega_bootloader {
     make("all");
 
     copy_built_file( "Caterina.hex" => $files{'atmega_bootloader'} );
-
+    make("clean");
 }
 
 sub build_atmega_firmware {
