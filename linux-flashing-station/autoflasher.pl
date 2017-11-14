@@ -93,7 +93,7 @@ sub flash_atmega_device {
     print "Program...";
     my ( $output, $error, $exit ) = run_avrdude( $addr,
         "atmega32u4",                                    qw"-B 1",
-        "-Uflash:w:" . $firmware->{'atmega32u4'} . ":i", qw"-Ulock:w:0x3F:m"
+        "-Uflash:w:" . $firmware->{'atmega32u4'} . ":i", qw"-Ulock:w:0x2F:m"
     );
     if ($exit) {
         error("FAIL - flashing ATMega32u4: \n$error\n");
