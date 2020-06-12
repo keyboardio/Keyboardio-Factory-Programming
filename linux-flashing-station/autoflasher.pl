@@ -76,25 +76,25 @@ sub set_atmega_fuses {
     my $addr = shift;
     print "Fuses...";
     my ( $output, $error, $exit ) = run_avrdude( $addr, "atmega32u4", split( /\s+/, $fuses->{'atmega32u4'} ) );
-    handle_exit($exit, "could not set fuses on atmega");
+    die_on_failure($exit, "could not set fuses on atmega");
 }
 
 sub flash_atmega_device {
     my $addr = shift;
     print "Program...";
     my ( $output, $error, $exit ) = run_avrdude( $addr, "atmega32u4", qw"-B 1", "-Uflash:w:" . $firmware->{'atmega32u4'} . ":i", qw"-Ulock:w:0x2F:m" );
-      handle_exit($exit,"FAIL - flashing ATMega32u4: \n$error\n");
+      die_on_failure($exit,"FAIL - flashing ATMega32u4: \n$error\n");
 }
 
 sub set_attiny_fuses {
     my $addr = shift;
     print "Fuses...";
     my ( $output, $error, $exit ) = run_avrdude( $addr, "attiny88", split( /\s+/, $fuses->{'attiny88'} ) );
-    handle_exit($exit, "FAIL - setting attiny88 fuses: \n$error\n");
+    die_on_failure($exit, "FAIL - setting attiny88 fuses: \n$error\n");
 }
 
 
-sub handle_exit($$) {
+sub die_on_failure($$) {
 	my $code = shift;
 	my $fail_message = shift;
     if ($code) {
@@ -111,7 +111,7 @@ sub flash_attiny_device {
     my $addr = shift;
     print "Program...";
     my ( $output, $error, $exit ) = run_avrdude( $addr, "attiny88", qw"-B 1 -U", "flash:w:" . $firmware->{'attiny88'} . ":i" );
-    handle_exit($exit, "FAIL - flashing attiny88");
+    die_on_failure($exit, "FAIL - flashing attiny88");
 }
 
 sub reset_usb_bus {
