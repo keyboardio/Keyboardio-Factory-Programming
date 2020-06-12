@@ -148,7 +148,7 @@ sub run_avrdude {
     my ( $in, $out, $err, $exitcode );
 
     $ENV{'MALLOC_CHECK_'} ='0';
-    my @cmd = ( 'avrdude', '-v', "-p$device", "-P$addr" , "-cusbtiny", "-q", @command );
+    my @cmd = ( 'avrdude', '-v', "-p$device", "-P$addr" , "-cusbasp", "-q", @command );
 
 #      print join(" ","\n",@cmd, "\n");
     eval {
@@ -165,7 +165,7 @@ sub run_avrdude {
         $exitcode = $? >> 8;
     }
 
-    # my $output = join("",`avrdude -v -p$device -cusbtiny -q $command 2>&1`);
+    # my $output = join("",`avrdude -v -p$device -cusbasp -q $command 2>&1`);
     #	print $in . "\n";
     #	print $out."\n";
     #	print $err ."\n";
@@ -213,7 +213,10 @@ sub probe_devices {
     reset_usb_bus();
 sleep(2);
 my ($in,$out,$err);
-my @data = `lsusb -d 1781:0c9f`;
+#usbtiny
+# my @data = `lsusb -d 1781:0c9f`;
+#usbasp
+my @data = `lsusb -d 16c0:05dc`;
 my @devices;
 for my $line ( @data) {
 	if ($line =~ /^Bus (\d+) Device (\d+)(.*?)/mi) {

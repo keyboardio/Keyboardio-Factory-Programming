@@ -39,7 +39,7 @@ my %repos = (
     'attiny-bootloader'  => {url=> 'git://github.com/keyboardio/attiny_i2c_bootloader', dir => 'attiny_bootloader' },
     'attiny-firmware'    => {url=>'git://github.com/keyboardio/avr_keyscanner', dir => 'attiny_firmware',},
 
-    'arduino-boards'     => {url=>'git://github.com/keyboardio/Arduino-Boards', dir => 'arduino_boards'},
+    'arduino-boards'     => {url=>'git://github.com/keyboardio/Kaleidoscope-Bundle-Keyboardio', dir => 'arduino_boards'},
 );
 
 my %files = (
