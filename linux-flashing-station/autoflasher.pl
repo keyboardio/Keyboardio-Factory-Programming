@@ -14,19 +14,14 @@ my $firmware = {
 #http://eleccelerator.com/fusecalc/fusecalc.php?chip=attiny88&LOW=4E&HIGH=DD&EXTENDED=FE&LOCKBIT=FF
 my $fuses = {
     attiny88 => "-e -Ulfuse:w:0xeE:m -Uhfuse:w:0xDD:m -Uefuse:w:0xFE:m",
-    atmega32u4 =>
-      "-e -Ulock:w:0x3F:m -Uefuse:w:0xcb:m -Uhfuse:w:0xd8:m -Ulfuse:w:0xff:m"
+    atmega32u4 => "-e -Ulock:w:0x3F:m -Uefuse:w:0xcb:m -Uhfuse:w:0xd8:m -Ulfuse:w:0xff:m"
 };
 
 sub program_boards {
     my @usbtiny_devices = probe_devices();
     if ( scalar @usbtiny_devices != 3 ) {
-        print "ERROR: I only see "
-          . ( scalar @usbtiny_devices )
-          . "red programmers\n";
-        print "ERROR: "
-          . ( 3 - ( scalar @usbtiny_devices ) )
-          . " are not here\n";
+        print "ERROR: I only see " . ( scalar @usbtiny_devices ) . "red programmers\n";
+        print "ERROR: " . ( 3 - ( scalar @usbtiny_devices ) ) . " are not here\n";
         print "ERROR: Check USB cables\n";
         print "ERROR: Check switches on red boards\n";
     }
@@ -52,7 +47,6 @@ sub program_boards {
 
 sub program_board {
     my $addr = shift;
-
     my $device = probe_device($addr);
 
     # ATMega32u4 0x1e9587
@@ -81,60 +75,43 @@ sub program_board {
 sub set_atmega_fuses {
     my $addr = shift;
     print "Fuses...";
-    my ( $output, $error, $exit ) =
-      run_avrdude( $addr, "atmega32u4",
-        split( /\s+/, $fuses->{'atmega32u4'} ) );
-    if ($exit) {
-        error("could not set fuses on atmega");
-    }
-    else {
-        print "OK. ";
-    }
+    my ( $output, $error, $exit ) = run_avrdude( $addr, "atmega32u4", split( /\s+/, $fuses->{'atmega32u4'} ) );
+    handle_exit($exit, "could not set fuses on atmega");
 }
 
 sub flash_atmega_device {
     my $addr = shift;
     print "Program...";
-    my ( $output, $error, $exit ) =
-      run_avrdude( $addr, "atmega32u4", qw"-B 1",
-        "-Uflash:w:" . $firmware->{'atmega32u4'} . ":i",
-        qw"-Ulock:w:0x2F:m" );
-    if ($exit) {
-        error("FAIL - flashing ATMega32u4: \n$error\n");
-    }
-    else {
-        print "OK. ";
-    }
+    my ( $output, $error, $exit ) = run_avrdude( $addr, "atmega32u4", qw"-B 1", "-Uflash:w:" . $firmware->{'atmega32u4'} . ":i", qw"-Ulock:w:0x2F:m" );
+      handle_exit($exit,"FAIL - flashing ATMega32u4: \n$error\n");
 }
 
 sub set_attiny_fuses {
     my $addr = shift;
     print "Fuses...";
-    my ( $output, $error, $exit ) =
-      run_avrdude( $addr, "attiny88", split( /\s+/, $fuses->{'attiny88'} ) );
+    my ( $output, $error, $exit ) = run_avrdude( $addr, "attiny88", split( /\s+/, $fuses->{'attiny88'} ) );
+    handle_exit($exit, "FAIL - setting attiny88 fuses: \n$error\n");
+}
 
-    if ($exit) {
-        error("FAIL - setting attiny88 fuses: \n$error\n");
+
+sub handle_exit($$) {
+	my $code = shift;
+	my $fail_message = shift;
+    if ($code) {
+        error($fail_message);
     }
     else {
         print "OK. ";
     }
+
 }
+
 
 sub flash_attiny_device {
     my $addr = shift;
     print "Program...";
-    my ( $output, $error, $exit ) = run_avrdude( $addr, "attiny88",
-        qw"-B 1 -U", "flash:w:" . $firmware->{'attiny88'} . ":i" );
-    if ($exit) {
-        error("FAIL - flashing attiny88");
-
-        #: \n$error\n");
-    }
-    else {
-        print "OK. ";
-    }
-
+    my ( $output, $error, $exit ) = run_avrdude( $addr, "attiny88", qw"-B 1 -U", "flash:w:" . $firmware->{'attiny88'} . ":i" );
+    handle_exit($exit, "FAIL - flashing attiny88");
 }
 
 sub reset_usb_bus {
@@ -153,10 +130,7 @@ sub run_avrdude {
     my ( $in, $out, $err, $exitcode );
 
     $ENV{'MALLOC_CHECK_'} = '0';
-    my @cmd =
-      ( 'avrdude', '-v', "-p$device", "-P$addr", "-cusbasp", "-q", @command );
-
-    #      print join(" ","\n",@cmd, "\n");
+    my @cmd = ( 'avrdude', '-v', "-p$device", "-P$addr", "-cusbasp", "-q", @command );
     eval {
         IPC::Run::run( \@cmd, \$in, \$out, \$err );
 
@@ -171,14 +145,7 @@ sub run_avrdude {
         $exitcode = $? >> 8;
     }
 
-    # my $output = join("",`avrdude -v -p$device -cusbasp -q $command 2>&1`);
-    #	print $in . "\n";
-    #	print $out."\n";
-    #	print $err ."\n";
-    #warn "Exit code is $exitcode";
     return ( $out, $err, $exitcode );
-
-    #return $output;
 }
 
 sub probe_device {
@@ -230,8 +197,6 @@ sub probe_devices {
             my $bus    = $1;
             my $device = $2;
             push @devices, "usb:$bus:$device";
-        }
-        else {
         }
     }
     return @devices;
