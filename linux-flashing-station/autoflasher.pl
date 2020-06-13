@@ -4,6 +4,9 @@ use strict;
 use IPC::Run;
 use Term::ReadKey;
 
+my $os = `uname`;
+chomp($os);
+
 my $firmware_dir = "firmware/";
 
 my $firmware = {
@@ -14,45 +17,55 @@ my $firmware = {
 #http://eleccelerator.com/fusecalc/fusecalc.php?chip=attiny88&LOW=4E&HIGH=DD&EXTENDED=FE&LOCKBIT=FF
 my $fuses = {
     attiny88 => "-e -Ulfuse:w:0xeE:m -Uhfuse:w:0xDD:m -Uefuse:w:0xFE:m",
-    atmega32u4 => "-e -Ulock:w:0x3F:m -Uefuse:w:0xcb:m -Uhfuse:w:0xd8:m -Ulfuse:w:0xff:m"
+    atmega32u4 =>
+      "-e -Ulock:w:0x3F:m -Uefuse:w:0xcb:m -Uhfuse:w:0xd8:m -Ulfuse:w:0xff:m"
 };
 
 sub program_boards {
-    my @usbtiny_devices = probe_devices();
-    if ( scalar @usbtiny_devices != 3 ) {
-        print "ERROR: I only see " . ( scalar @usbtiny_devices ) . "red programmers\n";
-        print "ERROR: " . ( 3 - ( scalar @usbtiny_devices ) ) . " are not here\n";
-        print "ERROR: Check USB cables\n";
-        print "ERROR: Check switches on red boards\n";
-    }
-    my $boards_programmed = 0;
-    eval {
-        for my $addr (@usbtiny_devices) {
-            print $boards_programmed+ 1 . ": ";
-            program_board($addr);
-            $boards_programmed++;
+    if ( $os ne 'Darwin' ) {
+        my @usbtiny_devices = probe_devices();
+        if ( scalar @usbtiny_devices != 3 ) {
+            print "ERROR: I only see " . ( scalar @usbtiny_devices ) . "red programmers\n";
+            print "ERROR: " . ( 3 - ( scalar @usbtiny_devices ) ) . " are not here\n";
+            print "ERROR: Check USB cables\n";
+            print "ERROR: Check switches on red boards\n";
         }
-    };
-    if ( my $msg = $@ ) {
-        print "ERROR: programmed $boards_programmed chips\n";
-        die $msg;
-    }
-    if ( $boards_programmed < 3 ) {
-        die "Only programmed $boards_programmed chips\n";
+        my $boards_programmed = 0;
+        eval {
+            for my $addr (@usbtiny_devices) {
+                print $boards_programmed+ 1 . ": ";
+                program_board($addr);
+                $boards_programmed++;
+            }
+        };
+        if ( my $msg = $@ ) {
+            print "ERROR: programmed $boards_programmed chips\n";
+            die $msg;
+        }
+        if ( $boards_programmed < 3 ) {
+            die "Only programmed $boards_programmed chips\n";
+        }
+        else {
+            print "\n\nDONE! All 3 chips programmed.\n";
+        }
     }
     else {
-        print "\n\nDONE! All 3 chips programmed.\n";
+        eval { program_board('no_address'); };
+        if ( my $msg = $@ ) {
+            error("Something went wrong with flashing");
+        }
+        else {
+            print "\n\nDONE! Chip programmed.\n";
+        }
+
     }
 }
 
 sub program_board {
-    my $addr = shift;
+    my $addr   = shift;
     my $device = probe_device($addr);
 
     # ATMega32u4 0x1e9587
-    # ATTiny88 0x1e9311
-    # none found: none;
-
     if ( $device =~ /0x1e9587/i ) {
         print "ATMega32U4...";
         set_atmega_fuses($addr);
@@ -60,6 +73,8 @@ sub program_board {
         print "\n";
 
     }
+
+    # ATTiny88 0x1e9311
     elsif ( $device =~ /0x1e9311/i ) {
         print "ATTiny88...  ";
         set_attiny_fuses($addr);
@@ -67,7 +82,7 @@ sub program_board {
         print "\n";
     }
     else {
-        print "\n\nERROR: I do not see a chip\n\n";
+        error("I do not see a chip");
     }
 
 }
@@ -76,27 +91,26 @@ sub set_atmega_fuses {
     my $addr = shift;
     print "Fuses...";
     my ( $output, $error, $exit ) = run_avrdude( $addr, "atmega32u4", split( /\s+/, $fuses->{'atmega32u4'} ) );
-    die_on_failure($exit, "could not set fuses on atmega");
+    die_on_failure( $exit, "could not set fuses on atmega" );
 }
 
 sub flash_atmega_device {
     my $addr = shift;
     print "Program...";
     my ( $output, $error, $exit ) = run_avrdude( $addr, "atmega32u4", qw"-B 1", "-Uflash:w:" . $firmware->{'atmega32u4'} . ":i", qw"-Ulock:w:0x2F:m" );
-      die_on_failure($exit,"FAIL - flashing ATMega32u4: \n$error\n");
+    die_on_failure( $exit, "FAIL - flashing ATMega32u4: \n$error\n" );
 }
 
 sub set_attiny_fuses {
     my $addr = shift;
     print "Fuses...";
     my ( $output, $error, $exit ) = run_avrdude( $addr, "attiny88", split( /\s+/, $fuses->{'attiny88'} ) );
-    die_on_failure($exit, "FAIL - setting attiny88 fuses: \n$error\n");
+    die_on_failure( $exit, "FAIL - setting attiny88 fuses: \n$error\n" );
 }
 
-
 sub die_on_failure($$) {
-	my $code = shift;
-	my $fail_message = shift;
+    my $code         = shift;
+    my $fail_message = shift;
     if ($code) {
         error($fail_message);
     }
@@ -106,12 +120,11 @@ sub die_on_failure($$) {
 
 }
 
-
 sub flash_attiny_device {
     my $addr = shift;
     print "Program...";
     my ( $output, $error, $exit ) = run_avrdude( $addr, "attiny88", qw"-B 1 -U", "flash:w:" . $firmware->{'attiny88'} . ":i" );
-    die_on_failure($exit, "FAIL - flashing attiny88");
+    die_on_failure( $exit, "FAIL - flashing attiny88" );
 }
 
 sub reset_usb_bus {
@@ -130,7 +143,14 @@ sub run_avrdude {
     my ( $in, $out, $err, $exitcode );
 
     $ENV{'MALLOC_CHECK_'} = '0';
-    my @cmd = ( 'avrdude', '-v', "-p$device", "-P$addr", "-cusbasp", "-q", @command );
+
+    my @cmd;
+	if ($addr eq 'no_device') {
+ 		@cmd = ( 'avrdude', '-v', "-p$device","-cusbasp", "-q", @command );
+	} else {
+ 		@cmd = ( 'avrdude', '-v', "-p$device", "-P$addr", "-cusbasp", "-q", @command );
+	}
+
     eval {
         IPC::Run::run( \@cmd, \$in, \$out, \$err );
 
@@ -161,7 +181,7 @@ sub probe_device {
 
 sub error {
     my $message = shift;
-    die $message;
+    die "ERROR: ". $message ."\n";
 }
 
 sub prompt_to_start {
@@ -173,6 +193,8 @@ sub prompt_to_start {
         my $nothing = ReadKey();
         ReadMode(0);
         if ( $nothing eq '_' ) { exit(0) }
+        if ( $nothing eq 'x' ) { exit(0) }
+        if ( $nothing eq 'q' ) { exit(0) }
         system("clear");
         eval { program_boards(); };
         if ( my $msg = $@ ) {
