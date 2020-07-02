@@ -1,0 +1,351 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+use IPC::Run;
+use Getopt::Long;
+use Cwd qw/abs_path cwd/;
+
+my %git_tags;
+my @build_log;
+my $ROOT = get_cwd();
+my $FLASHER_FIRMWARE_DIR = $ROOT."../linux-flashing-station/firmware";
+my $WINDOWS_FLASHER_FIRMWARE_DIR = $ROOT."../windows-flashing-tools/firmware";
+my $OUTPUT_DIR;
+my $progress = 0;
+
+my %args;
+
+GetOptions(\%args,
+    'tag=s',
+    'attiny-bootloader-ref=s',
+    'attiny-firmware-ref=s',
+    'arduino-boards-ref=s',
+    'hashes-in-file-names',
+    'install',
+    'debug',
+    'help'
+);
+
+if ($args{'help'}) {
+    die "Jesse needs to doc some help";
+}
+
+if ( !$args{'tag'} ) {
+    die "You need to specifiy a tag or branch name that exists on all four repos in order to build.\n";
+}
+
+my %repos = (
+    'attiny-bootloader'  => {url=> 'git://github.com/keyboardio/attiny_i2c_bootloader', dir => 'attiny_bootloader' },
+    'attiny-firmware'    => {url=>'git://github.com/keyboardio/avr_keyscanner', dir => 'attiny_firmware',},
+
+    'arduino-boards'     => {url=>'git://github.com/keyboardio/Kaleidoscope-Bundle-Keyboardio', dir => 'arduino_boards'},
+);
+
+my %files = (
+
+    build_details                   => 'BUILD_DETAILS.txt',
+    attiny_bootloader               => "attiny88_bootloader.hex",
+    attiny_firmware_with_bootloader => "attiny88_firmware_with_bootloader.hex",
+    attiny_firmware                 => "attiny88_firmware.hex",
+    attiny_flasher_sketch_dir       => "attiny_flasher",
+    attiny_flasher_sketch           => "attiny_flasher/attiny_flasher.ino",
+    atmega_bootloader               => "atmega32u4_bootloader.hex",
+    atmega_firmware                 => "atmega32u4_firmware.hex",
+    atmega_firmware_with_bootloader => "atmega32u4_firmware_with_bootloader.hex"
+
+);
+
+
+eval {
+
+    check_deps();
+
+    mkdir("repos");
+
+    $OUTPUT_DIR = make_output_dir();
+    get_code();
+    set_output_filenames();
+    build_attiny_bootloader();
+    build_attiny_firmware();
+    build_atmega_bootloader();
+    build_atmega_firmware();
+    describe_build();
+    
+    if ($args{install}) {
+	install_to_flasher();
+    }
+
+};
+
+if ( my $err = $@ ) {
+    print STDERR "\n\nBuild failure.\n";
+    print STDERR "The problem was: $err\n";
+    print STDERR "Here's the log:\n";
+    print STDERR join( "\n", @build_log );
+    exit -1;
+}
+else {
+    print "\nBuild succeeded.\n";
+    print "Output directory: " . $OUTPUT_DIR . "\n";
+    print "Build log: " . $OUTPUT_DIR . $files{'build_details'} . "\n";
+}
+
+sub get_code {
+
+    # Check out repos as of tag $TAG:
+    for my $repo_name ( keys %repos ) {
+        set_cwd($ROOT);
+        my $repo_path = "repos/" . $repos{$repo_name}->{dir};
+        if ( !-d $repo_path . "/.git" ) {
+            git( 'clone', $repos{$repo_name}->{url}, $repo_path );
+            set_cwd($repo_path);
+        }
+        else {
+            set_cwd($repo_path);
+            git(qw'fetch --all');
+        }
+
+	my $ref = $args{'tag'};
+
+	if (my $repo_refname = $args{$repo_name.'-ref'} ) {
+		$ref = $repo_refname;
+	}
+        git(qw/checkout/, $ref);
+        git(qw/submodule update --init --recursive/);
+        git(qw/clean -xdf/);
+	describe_repo_from_cwd($repo_name);
+    }
+}
+
+sub describe_repo_from_cwd {
+	my $repo_name = shift;
+        my $tag = git(qw"describe --abbrev=6 --dirty --always");
+        chomp($tag);
+        $git_tags{$repo_name} = $tag;
+}
+
+sub build_attiny_bootloader {
+    set_cwd( repo_dir('attiny-bootloader'). "/TWI_Slave" );
+
+    make(qw"all");
+
+    copy_built_file( "twi_slave.hex", $files{'attiny_bootloader'} );
+}
+
+sub build_attiny_firmware {
+    set_cwd( repo_dir('attiny-firmware'));
+    copy( $OUTPUT_DIR . $files{'attiny_bootloader'}, "etc/bootloader.hex" );
+
+    make("all");
+    make("flashing-tool");
+
+    mkdir( $OUTPUT_DIR . $files{'attiny_flasher_sketch_dir'} );
+    copy_built_file( "out/attiny_flasher/Makefile", 	$files{'attiny_flasher_sketch_dir'}."/Makefile");
+    copy_built_file( "out/attiny_flasher/attiny_flasher.ino", 	$files{'attiny_flasher_sketch'} );
+    copy_built_file( "out/attiny88_factory.hex",    	$files{'attiny_firmware_with_bootloader'} );
+    copy_built_file( "out/attiny88_keyscanner.hex", 	$files{'attiny_firmware'} );
+
+}
+
+sub build_atmega_bootloader {
+    set_cwd( repo_dir('arduino-boards'). "/bootloaders/caterina" );
+
+    make("all");
+
+    copy_built_file( "Caterina.hex" => $files{'atmega_bootloader'} );
+    make("clean");
+}
+
+sub build_atmega_firmware {
+
+    set_cwd( repo_dir('arduino-boards'). "/libraries/Model01-Firmware" );
+    describe_repo_from_cwd('atmega-firmware');
+
+    my $version_information = '"sketch:'.$git_tags{'atmega-firmware'}.";lib:".$git_tags{'arduino-boards'}.'"'; 
+    my $version_cflags = "LOCAL_CFLAGS='-DBUILD_INFORMATION=".$version_information."'";
+    make("build", $version_cflags);
+    make( "hex-with-bootloader", "BOOTLOADER_PATH=" . $OUTPUT_DIR . $files{'atmega_bootloader'}, $version_cflags );
+
+    copy_built_file( "output/Model01-Firmware/Model01-Firmware-latest.hex" => $files{'atmega_firmware'} );
+    copy_built_file( "output/Model01-Firmware/Model01-Firmware-latest-with-bootloader.hex" => $files{'atmega_firmware_with_bootloader'} );
+
+}
+
+sub copy {
+    my $from = shift;
+    my $to   = shift;
+    my ( $exitcode, $out, $err ) = run_command( "cp", $from, $to );
+}
+
+sub copy_built_file {
+    my $from = shift;
+    my $to   = shift;
+    copy( $from => $OUTPUT_DIR . $to );
+}
+
+sub git {
+    my @commands = (@_);
+    my ( $exitcode, $out, $err ) = run_command( 'git', @commands );
+    return $out;
+}
+
+sub make {
+    my @commands = (@_);
+    my ( $exitcode, $out, $err ) = run_command( 'make', @commands );
+    if ($exitcode) {
+        print "Ran command: " . join( " ", 'make', @commands );
+        print "$err\n";
+    }
+    elsif ($err) {
+        print "No failure, but still error output:\n\n$err\n";
+    }
+    else {
+
+    }
+}
+
+sub run_command {
+    my @cmd = (@_);
+    my ( $in, $out, $err, $exitcode );
+    progress();
+    print "# " . join( " ", @cmd ) . "\n" if ($args{'debug'});
+    eval {
+        IPC::Run::run( \@cmd, \$in, \$out, \$err );
+
+    };
+    if ($@) {
+
+        # Could not run the program
+        $exitcode = undef;
+        die "Could not run command '" . join( " ", @cmd ) . "'\n";
+    }
+    else {
+        $exitcode = $? >> 8;
+    }
+
+    print $out. "\n" if ( $out && $args{'debug'} );
+    print $err. "\n" if ( $err && $args{'debug'} );
+
+    push @build_log, "# " . join( " ", @cmd );
+    if ( $exitcode != 0 ) {
+        push @build_log, "Non-zero exit code: " . $exitcode;
+    }
+    if ($out) {
+        push @build_log, $out;
+    }
+    if ($err) {
+        push @build_log, "STDERR:";
+        push @build_log, $err;
+    }
+
+    if ( $exitcode != 0 ) {
+        die "Exit code $exitcode";
+    }
+    return ( $exitcode, $out, $err );
+}
+
+sub set_cwd {
+    my $dir = shift;
+    progress();
+    print "# cd $dir\n" if ($args{debug});
+    push @build_log, "# cd $dir";
+    chdir($dir);
+}
+
+sub get_cwd {
+    my $dir = abs_path( cwd() ) . "/";
+    return $dir;
+}
+
+sub check_deps {
+    eval { run_command( 'avr-gcc', '-v' ) };
+    if ( my $err = $@ ) {
+        die "avr-gcc does not appear to be installed: $err\n";
+    }
+
+}
+
+sub make_output_dir {
+
+    mkdir("output");
+    set_cwd("output");
+    my $datestring = `date -u "+%Y-%m-%dT%H:%M:%S"`;
+    chomp($datestring);
+    mkdir($datestring);
+    if ( -l 'latest' ) {
+        run_command( 'rm', 'latest' );
+    }
+    symlink $datestring, 'latest';
+    chdir($datestring);
+
+    return get_cwd();
+}
+
+sub set_output_filenames {
+    if ( $args{'hashes-in-file-names'} ) {
+        $files{'attiny_bootloader'}               = "attiny88_bootloader-" . $git_tags{'attiny-bootloader'} . ".hex";
+        $files{'attiny_firmware_with_bootloader'} = "attiny88_firmware_with_bootloader-" . $git_tags{'attiny-firmware'} . ".hex";
+        $files{'attiny_firmware'}                 = "attiny88_firmware-" . $git_tags{'attiny-firmware'} . ".hex";
+        $files{'attiny_flasher_sketch_dir'}       = "attiny_flasher-" . $git_tags{'attiny-firmware'};
+        $files{'attiny_flasher_sketch'}           = $files{'attiny_flasher_sketch_dir'} . "/attiny_flasher-" . $git_tags{'attiny-firmware'} . ".ino";
+        $files{'atmega_bootloader'}               = "atmega32u4_bootloader-" . $git_tags{'arduino-boards'} . ".hex";
+        $files{'atmega_firmware'}                 = "atmega32u4_firmware-" . $git_tags{'atmega-firmware'} . ".hex";
+        $files{'atmega_firmware_with_bootloader'} = "atmega32u4_firmware_with_bootloader-" . $git_tags{'atmega-firmware'} . ".hex";
+    }
+}
+
+sub repo_dir {
+	my $repo = shift;
+	return $ROOT.'repos/'.$repos{$repo}->{dir};
+}
+
+
+sub describe_build {
+    set_cwd($OUTPUT_DIR);
+    open( my $out, ">", $files{'build_details'} );
+
+    print $out "Firmware build completed at " . scalar gmtime() . "\n";
+    print $out "\n\n";
+
+    print $out "=" x 60 . "\n";
+    for my $key ( keys %git_tags ) {
+        print $out "Repository:  " . $key . "\n" . "Repo URL:    " . ($repos{$key}->{url} || ''). "\n" . "Description: " . $git_tags{$key} . "\n\n";
+    }
+
+    print $out "=" x 60 . "\n";
+    print $out "Build tool invocation:\n";
+    print $out join( " ", $0, @ARGV );
+
+    print $out "\n\n\n";
+    print $out "=" x 60 . "\n";
+    print $out "Build Log:\n";
+    print $out join( "\n", @build_log );
+
+    print $out "\n\n\n\n";
+    print $out "=" x 60 . "\n";
+
+    for my $cmd ( 'arduino-builder -version', 'avr-gcc -v', 'git --version', 'make -v', 'uname -a', 'hostname' ) {
+        my ( $exit, $stdout, $stderr ) = run_command( split( /\s+/, $cmd ) );
+        print $out "\n\n";
+        print $out "'$cmd':\n";
+
+        print $out $stdout || $stderr;
+    }
+
+    close $out;
+    set_cwd($ROOT);
+}
+
+sub install_to_flasher {
+	copy($OUTPUT_DIR. $files{'atmega_firmware_with_bootloader'} => $FLASHER_FIRMWARE_DIR."/atmega.hex");
+	copy($OUTPUT_DIR. $files{'attiny_firmware_with_bootloader'} => $FLASHER_FIRMWARE_DIR."/attiny.hex");
+	copy($OUTPUT_DIR. $files{'atmega_firmware_with_bootloader'} => $WINDOWS_FLASHER_FIRMWARE_DIR."/atmega.hex");
+	copy($OUTPUT_DIR. $files{'attiny_firmware_with_bootloader'} => $WINDOWS_FLASHER_FIRMWARE_DIR."/attiny.hex");
+}
+
+
+sub progress {
+	$progress++;
+	print "." if (!$args{debug});
+}
