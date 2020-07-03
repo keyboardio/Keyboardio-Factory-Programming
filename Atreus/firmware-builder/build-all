@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+# export PATH=/Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin:$PATH
+
 use warnings;
 use strict;
 use IPC::Run;
@@ -18,9 +20,7 @@ my %args;
 
 GetOptions(\%args,
     'tag=s',
-    'attiny-bootloader-ref=s',
-    'attiny-firmware-ref=s',
-    'arduino-boards-ref=s',
+    'bundle-ref=s',
     'hashes-in-file-names',
     'install',
     'debug',
@@ -36,20 +36,12 @@ if ( !$args{'tag'} ) {
 }
 
 my %repos = (
-    'attiny-bootloader'  => {url=> 'git://github.com/keyboardio/attiny_i2c_bootloader', dir => 'attiny_bootloader' },
-    'attiny-firmware'    => {url=>'git://github.com/keyboardio/avr_keyscanner', dir => 'attiny_firmware',},
-
-    'arduino-boards'     => {url=>'git://github.com/keyboardio/Kaleidoscope-Bundle-Keyboardio', dir => 'arduino_boards'},
+    'bundle'     => {url=>'git://github.com/keyboardio/Kaleidoscope-Bundle-Keyboardio', dir => 'bundle'},
 );
 
 my %files = (
 
     build_details                   => 'BUILD_DETAILS.txt',
-    attiny_bootloader               => "attiny88_bootloader.hex",
-    attiny_firmware_with_bootloader => "attiny88_firmware_with_bootloader.hex",
-    attiny_firmware                 => "attiny88_firmware.hex",
-    attiny_flasher_sketch_dir       => "attiny_flasher",
-    attiny_flasher_sketch           => "attiny_flasher/attiny_flasher.ino",
     atmega_bootloader               => "atmega32u4_bootloader.hex",
     atmega_firmware                 => "atmega32u4_firmware.hex",
     atmega_firmware_with_bootloader => "atmega32u4_firmware_with_bootloader.hex"
@@ -66,8 +58,6 @@ eval {
     $OUTPUT_DIR = make_output_dir();
     get_code();
     set_output_filenames();
-    build_attiny_bootloader();
-    build_attiny_firmware();
     build_atmega_bootloader();
     build_atmega_firmware();
     describe_build();
@@ -125,31 +115,8 @@ sub describe_repo_from_cwd {
         $git_tags{$repo_name} = $tag;
 }
 
-sub build_attiny_bootloader {
-    set_cwd( repo_dir('attiny-bootloader'). "/TWI_Slave" );
-
-    make(qw"all");
-
-    copy_built_file( "twi_slave.hex", $files{'attiny_bootloader'} );
-}
-
-sub build_attiny_firmware {
-    set_cwd( repo_dir('attiny-firmware'));
-    copy( $OUTPUT_DIR . $files{'attiny_bootloader'}, "etc/bootloader.hex" );
-
-    make("all");
-    make("flashing-tool");
-
-    mkdir( $OUTPUT_DIR . $files{'attiny_flasher_sketch_dir'} );
-    copy_built_file( "out/attiny_flasher/Makefile", 	$files{'attiny_flasher_sketch_dir'}."/Makefile");
-    copy_built_file( "out/attiny_flasher/attiny_flasher.ino", 	$files{'attiny_flasher_sketch'} );
-    copy_built_file( "out/attiny88_factory.hex",    	$files{'attiny_firmware_with_bootloader'} );
-    copy_built_file( "out/attiny88_keyscanner.hex", 	$files{'attiny_firmware'} );
-
-}
-
 sub build_atmega_bootloader {
-    set_cwd( repo_dir('arduino-boards'). "/bootloaders/caterina" );
+    set_cwd( repo_dir('bundle'). "/avr/bootloaders/Atreus2" );
 
     make("all");
 
@@ -159,16 +126,19 @@ sub build_atmega_bootloader {
 
 sub build_atmega_firmware {
 
-    set_cwd( repo_dir('arduino-boards'). "/libraries/Model01-Firmware" );
+    set_cwd( repo_dir('bundle'). "/avr/libraries/Kaleidoscope/examples/Devices/Keyboardio/Atreus" );
     describe_repo_from_cwd('atmega-firmware');
 
-    my $version_information = '"sketch:'.$git_tags{'atmega-firmware'}.";lib:".$git_tags{'arduino-boards'}.'"'; 
-    my $version_cflags = "LOCAL_CFLAGS='-DBUILD_INFORMATION=".$version_information."'";
-    make("build", $version_cflags);
-    make( "hex-with-bootloader", "BOOTLOADER_PATH=" . $OUTPUT_DIR . $files{'atmega_bootloader'}, $version_cflags );
+    my $sketch_output_dir = 'output/';
 
-    copy_built_file( "output/Model01-Firmware/Model01-Firmware-latest.hex" => $files{'atmega_firmware'} );
-    copy_built_file( "output/Model01-Firmware/Model01-Firmware-latest-with-bootloader.hex" => $files{'atmega_firmware_with_bootloader'} );
+
+    my $version_information = '"sketch:'.$git_tags{'atmega-firmware'}.";lib:".$git_tags{'bundle'}.'"'; 
+    my $version_cflags = "LOCAL_CFLAGS='-DBUILD_INFORMATION=".$version_information."'";
+    make("build", "OUTPUT_PATH=".$sketch_output_dir, $version_cflags);
+    make( "hex-with-bootloader",  "OUTPUT_PATH=".$sketch_output_dir, "BOOTLOADER_PATH=" . $OUTPUT_DIR . $files{'atmega_bootloader'}, $version_cflags );
+
+    copy_built_file( $sketch_output_dir."Atreus-latest.hex" => $files{'atmega_firmware'} );
+    copy_built_file( $sketch_output_dir."Atreus-latest-with-bootloader.hex" => $files{'atmega_firmware_with_bootloader'} );
 
 }
 
@@ -284,12 +254,7 @@ sub make_output_dir {
 
 sub set_output_filenames {
     if ( $args{'hashes-in-file-names'} ) {
-        $files{'attiny_bootloader'}               = "attiny88_bootloader-" . $git_tags{'attiny-bootloader'} . ".hex";
-        $files{'attiny_firmware_with_bootloader'} = "attiny88_firmware_with_bootloader-" . $git_tags{'attiny-firmware'} . ".hex";
-        $files{'attiny_firmware'}                 = "attiny88_firmware-" . $git_tags{'attiny-firmware'} . ".hex";
-        $files{'attiny_flasher_sketch_dir'}       = "attiny_flasher-" . $git_tags{'attiny-firmware'};
-        $files{'attiny_flasher_sketch'}           = $files{'attiny_flasher_sketch_dir'} . "/attiny_flasher-" . $git_tags{'attiny-firmware'} . ".ino";
-        $files{'atmega_bootloader'}               = "atmega32u4_bootloader-" . $git_tags{'arduino-boards'} . ".hex";
+        $files{'atmega_bootloader'}               = "atmega32u4_bootloader-" . $git_tags{'bundle'} . ".hex";
         $files{'atmega_firmware'}                 = "atmega32u4_firmware-" . $git_tags{'atmega-firmware'} . ".hex";
         $files{'atmega_firmware_with_bootloader'} = "atmega32u4_firmware_with_bootloader-" . $git_tags{'atmega-firmware'} . ".hex";
     }
@@ -339,9 +304,7 @@ sub describe_build {
 
 sub install_to_flasher {
 	copy($OUTPUT_DIR. $files{'atmega_firmware_with_bootloader'} => $FLASHER_FIRMWARE_DIR."/atmega.hex");
-	copy($OUTPUT_DIR. $files{'attiny_firmware_with_bootloader'} => $FLASHER_FIRMWARE_DIR."/attiny.hex");
 	copy($OUTPUT_DIR. $files{'atmega_firmware_with_bootloader'} => $WINDOWS_FLASHER_FIRMWARE_DIR."/atmega.hex");
-	copy($OUTPUT_DIR. $files{'attiny_firmware_with_bootloader'} => $WINDOWS_FLASHER_FIRMWARE_DIR."/attiny.hex");
 }
 
 
