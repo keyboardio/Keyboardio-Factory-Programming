@@ -134,8 +134,15 @@ sub build_atmega_firmware {
 
     my $version_information = '"sketch:'.$git_tags{'atmega-firmware'}.";lib:".$git_tags{'bundle'}.'"'; 
     my $version_cflags = "LOCAL_CFLAGS='-DBUILD_INFORMATION=".$version_information."'";
-    make("build", "OUTPUT_PATH=".$sketch_output_dir, $version_cflags);
-    make( "hex-with-bootloader",  "OUTPUT_PATH=".$sketch_output_dir, "BOOTLOADER_PATH=" . $OUTPUT_DIR . $files{'atmega_bootloader'}, $version_cflags );
+    make("build", "KALEIDOSCOPE_PLUGIN_MAKEFILE_DIR=/avr/build-tools/makefiles/",
+"BOARD_HARDWARE_PATH=".repo_dir('bundle'),
+"KALEIDOSCOPE_BUILDER_DIR=".repo_dir('bundle')."/avr/libraries/Kaleidoscope/bin",
+
+ "OUTPUT_PATH=".$sketch_output_dir, $version_cflags);
+    make( "hex-with-bootloader", "KALEIDOSCOPE_PLUGIN_MAKEFILE_DIR=/avr/build-tools/makefiles/", "BOARD_HARDWARE_PATH=".repo_dir('bundle'),
+"KALEIDOSCOPE_BUILDER_DIR=".repo_dir('bundle')."/avr/libraries/Kaleidoscope/bin",
+
+"OUTPUT_PATH=".$sketch_output_dir, "BOOTLOADER_PATH=" . $OUTPUT_DIR . $files{'atmega_bootloader'}, $version_cflags );
 
     copy_built_file( $sketch_output_dir."Atreus-latest.hex" => $files{'atmega_firmware'} );
     copy_built_file( $sketch_output_dir."Atreus-latest-with-bootloader.hex" => $files{'atmega_firmware_with_bootloader'} );
