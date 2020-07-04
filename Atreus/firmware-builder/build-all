@@ -18,6 +18,9 @@ my $progress = 0;
 
 my %args;
 
+
+
+
 GetOptions( \%args, 'tag=s', 'bundle-ref=s', 'hashes-in-file-names', 'install',
     'debug', 'help' );
 
@@ -52,13 +55,16 @@ eval {
     check_deps();
 
     mkdir("repos");
+    get_code();
+
+    build_fake_homedir();
+    $ENV{'HOME'} = $ROOT."/homedir";
 
     $OUTPUT_DIR = make_output_dir();
-    get_code();
     set_output_filenames();
 
-my $bootloader_source= 	repo_dir('bundle') . "/avr/bootloaders/Atreus2" );
- my $firmware_sketch_source = repo_dir('bundle') . "/avr/libraries/Kaleidoscope/examples/Devices/Keyboardio/Atreus" ;
+    my $bootloader_source = repo_dir('bundle') . "/avr/bootloaders/Atreus2" ;
+    my $firmware_sketch_source = repo_dir('bundle') . "/avr/libraries/Kaleidoscope/examples/Devices/Keyboardio/Atreus" ;
 
     build_atmega_bootloader($bootloader_source);
     build_atmega_firmware($firmware_sketch_source);
@@ -110,6 +116,18 @@ sub get_code {
     }
 }
 
+sub build_fake_homedir {
+        set_cwd($ROOT);
+	warn "Making the fake homedir structure inside $ROOT";
+	mkdir("homedir");
+	mkdir("homedir/Documents");
+	mkdir("homedir/Documents/Arduino");
+	mkdir("homedir/Documents/Arduino/hardware");
+	symlink("homedir/Documents/Arduino", "homedir/Arduino");
+	symlink (repo_dir('bundle'), "homedir/Documents/Arduino/hardware/keyboardio");
+
+}
+
 sub describe_repo_from_cwd {
     my $repo_name = shift;
     my $tag       = git(qw"describe --abbrev=6 --dirty --always");
@@ -141,14 +159,11 @@ sub build_atmega_firmware {
 
 
    my @build_env = (
-        "KALEIDOSCOPE_PLUGIN_MAKEFILE_DIR=/avr/build-tools/makefiles/",
-        "BOARD_HARDWARE_PATH=" . repo_dir('bundle'),
-        "KALEIDOSCOPE_BUILDER_DIR=" . repo_dir('bundle') . "/avr/libraries/Kaleidoscope/bin",
         "OUTPUT_PATH=" . $sketch_output_dir,
         "BOOTLOADER_PATH=" . $OUTPUT_DIR . $files{'atmega_bootloader'},
         "LOCAL_CFLAGS='-DBUILD_INFORMATION=" . $version_information . "'"
 
-	)
+	);
 
     make( "build",  @build_env);
     make( "hex-with-bootloader", @build_env);
