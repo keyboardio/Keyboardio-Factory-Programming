@@ -38,13 +38,14 @@ my %repos = (
 );
 
 my %files = (
-
     build_details                   => 'BUILD_DETAILS.txt',
     atmega_bootloader               => "atmega32u4_bootloader.hex",
     atmega_firmware                 => "atmega32u4_firmware.hex",
     atmega_firmware_with_bootloader => "atmega32u4_firmware_with_bootloader.hex"
 
 );
+
+
 
 eval {
 
@@ -55,8 +56,12 @@ eval {
     $OUTPUT_DIR = make_output_dir();
     get_code();
     set_output_filenames();
-    build_atmega_bootloader();
-    build_atmega_firmware();
+
+my $bootloader_source= 	repo_dir('bundle') . "/avr/bootloaders/Atreus2" );
+ my $firmware_sketch_source = repo_dir('bundle') . "/avr/libraries/Kaleidoscope/examples/Devices/Keyboardio/Atreus" ;
+
+    build_atmega_bootloader($bootloader_source);
+    build_atmega_firmware($firmware_sketch_source);
     describe_build();
 
     if ( $args{install} ) {
@@ -113,7 +118,8 @@ sub describe_repo_from_cwd {
 }
 
 sub build_atmega_bootloader {
-    set_cwd( repo_dir('bundle') . "/avr/bootloaders/Atreus2" );
+	my $bootloader_dir = shift;
+    set_cwd( $bootloader_dir);
 
     make("all");
 
@@ -122,46 +128,33 @@ sub build_atmega_bootloader {
 }
 
 sub build_atmega_firmware {
+    my $firmware_dir = shift;
 
-    set_cwd( repo_dir('bundle')
-          . "/avr/libraries/Kaleidoscope/examples/Devices/Keyboardio/Atreus" );
+    set_cwd( $firmware_dir);
     describe_repo_from_cwd('atmega-firmware');
 
     my $sketch_output_dir = 'output/';
 
     my $version_information =
-        '"sketch:'
-      . $git_tags{'atmega-firmware'} . ";lib:"
-      . $git_tags{'bundle'} . '"';
-    my $version_cflags =
-      "LOCAL_CFLAGS='-DBUILD_INFORMATION=" . $version_information . "'";
-    make(
-        "build", "KALEIDOSCOPE_PLUGIN_MAKEFILE_DIR=/avr/build-tools/makefiles/",
-        "BOARD_HARDWARE_PATH=" . repo_dir('bundle'),
-        "KALEIDOSCOPE_BUILDER_DIR="
-          . repo_dir('bundle')
-          . "/avr/libraries/Kaleidoscope/bin",
+        '"sketch:' . $git_tags{'atmega-firmware'} . 
+	";lib:" . $git_tags{'bundle'} . '"';
 
-        "OUTPUT_PATH=" . $sketch_output_dir, $version_cflags
-    );
-    make(
-        "hex-with-bootloader",
+
+   my @build_env = (
         "KALEIDOSCOPE_PLUGIN_MAKEFILE_DIR=/avr/build-tools/makefiles/",
         "BOARD_HARDWARE_PATH=" . repo_dir('bundle'),
-        "KALEIDOSCOPE_BUILDER_DIR="
-          . repo_dir('bundle')
-          . "/avr/libraries/Kaleidoscope/bin",
-
+        "KALEIDOSCOPE_BUILDER_DIR=" . repo_dir('bundle') . "/avr/libraries/Kaleidoscope/bin",
         "OUTPUT_PATH=" . $sketch_output_dir,
         "BOOTLOADER_PATH=" . $OUTPUT_DIR . $files{'atmega_bootloader'},
-        $version_cflags
-    );
+        "LOCAL_CFLAGS='-DBUILD_INFORMATION=" . $version_information . "'"
 
-    copy_built_file(
-        $sketch_output_dir . "Atreus-latest.hex" => $files{'atmega_firmware'} );
-    copy_built_file( $sketch_output_dir
-          . "Atreus-latest-with-bootloader.hex" =>
-          $files{'atmega_firmware_with_bootloader'} );
+	)
+
+    make( "build",  @build_env);
+    make( "hex-with-bootloader", @build_env);
+
+    copy_built_file( $sketch_output_dir . "Atreus-latest.hex" => $files{'atmega_firmware'} );
+    copy_built_file( $sketch_output_dir . "Atreus-latest-with-bootloader.hex" => $files{'atmega_firmware_with_bootloader'} );
 
 }
 
@@ -277,13 +270,9 @@ sub make_output_dir {
 
 sub set_output_filenames {
     if ( $args{'hashes-in-file-names'} ) {
-        $files{'atmega_bootloader'} =
-          "atmega32u4_bootloader-" . $git_tags{'bundle'} . ".hex";
-        $files{'atmega_firmware'} =
-          "atmega32u4_firmware-" . $git_tags{'atmega-firmware'} . ".hex";
-        $files{'atmega_firmware_with_bootloader'} =
-          "atmega32u4_firmware_with_bootloader-"
-          . $git_tags{'atmega-firmware'} . ".hex";
+        $files{'atmega_bootloader'} = "atmega32u4_bootloader-" . $git_tags{'bundle'} . ".hex";
+        $files{'atmega_firmware'} = "atmega32u4_firmware-" . $git_tags{'atmega-firmware'} . ".hex";
+        $files{'atmega_firmware_with_bootloader'} = "atmega32u4_firmware_with_bootloader-" . $git_tags{'atmega-firmware'} . ".hex";
     }
 }
 
@@ -292,6 +281,15 @@ sub repo_dir {
     return $ROOT . 'repos/' . $repos{$repo}->{dir};
 }
 
+
+sub describe_build_header {
+    my $title = shift;
+
+    my $result = "\n\n\n";
+    $result .= "=" x 60 . "\n";
+    $result .= $title . ":\n";
+    return $result;
+}
 sub describe_build {
     set_cwd($OUTPUT_DIR);
     open( my $out, ">", $files{'build_details'} );
@@ -309,18 +307,13 @@ sub describe_build {
           . $git_tags{$key} . "\n\n";
     }
 
-    print $out "=" x 60 . "\n";
-    print $out "Build tool invocation:\n";
+    print $out describe_build_header("Build tool invocation");
     print $out join( " ", $0, @ARGV );
 
-    print $out "\n\n\n";
-    print $out "=" x 60 . "\n";
-    print $out "Build Log:\n";
+    print $out describe_build_header("Build Log");
     print $out join( "\n", @build_log );
 
-    print $out "\n\n\n\n";
-    print $out "=" x 60 . "\n";
-
+    print $out describe_build_header("Environment");
     for my $cmd (
         'arduino-builder -version',
         'avr-gcc -v', 'git --version',
@@ -339,12 +332,8 @@ sub describe_build {
 }
 
 sub install_to_flasher {
-    copy(   $OUTPUT_DIR
-          . $files{'atmega_firmware_with_bootloader'} => $FLASHER_FIRMWARE_DIR
-          . "/atmega.hex" );
-    copy(   $OUTPUT_DIR
-          . $files{'atmega_firmware_with_bootloader'} =>
-          $WINDOWS_FLASHER_FIRMWARE_DIR . "/atmega.hex" );
+    copy(   $OUTPUT_DIR . $files{'atmega_firmware_with_bootloader'} => $FLASHER_FIRMWARE_DIR . "/atmega.hex" );
+    copy(   $OUTPUT_DIR . $files{'atmega_firmware_with_bootloader'} => $WINDOWS_FLASHER_FIRMWARE_DIR . "/atmega.hex" );
 }
 
 sub progress {
