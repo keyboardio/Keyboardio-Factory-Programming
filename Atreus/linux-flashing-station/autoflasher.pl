@@ -52,7 +52,7 @@ sub program_boards {
     else {
         eval { program_board('no_address'); };
         if ( my $msg = $@ ) {
-            error("Something went wrong with flashing");
+            error("Something went wrong with flashing: $msg");
         }
         else {
             print "\n\nDONE! Chip programmed.\n";
@@ -145,12 +145,12 @@ sub run_avrdude {
     $ENV{'MALLOC_CHECK_'} = '0';
 
     my @cmd;
-	if ($addr eq 'no_device') {
- 		@cmd = ( 'avrdude', '-v', "-p$device","-cusbasp", "-q", @command );
+	if ($addr eq 'no_address') {
+ 		@cmd = ( 'avrdude', '-v', "-p$device","-cusbtiny", "-q", @command );
 	} else {
- 		@cmd = ( 'avrdude', '-v', "-p$device", "-P$addr", "-cusbasp", "-q", @command );
+ 		@cmd = ( 'avrdude', '-v', "-p$device", "-P$addr", "-cusbtiny", "-q", @command );
 	}
-
+	warn "CMD is ".join(" ",@cmd);
     eval {
         IPC::Run::run( \@cmd, \$in, \$out, \$err );
 
@@ -210,9 +210,9 @@ sub probe_devices {
     my ( $in, $out, $err );
 
     #usbtiny
-    # my @data = `lsusb -d 1781:0c9f`;
+     my @data = `lsusb -d 1781:0c9f`;
     #usbasp
-    my @data = `lsusb -d 16c0:05dc`;
+    #my @data = `lsusb -d 16c0:05dc`;
     my @devices;
     for my $line (@data) {
         if ( $line =~ /^Bus (\d+) Device (\d+)(.*?)/mi ) {

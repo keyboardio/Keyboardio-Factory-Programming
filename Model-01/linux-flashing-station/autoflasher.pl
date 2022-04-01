@@ -9,6 +9,10 @@ chomp($os);
 
 my $firmware_dir = "firmware/";
 
+my $avrdude = "/usr/local/bin/avrdude";
+my $flasher = "usbasp";
+#my $flasher = "usbtiny";
+
 my $firmware = {
     atmega32u4 => $firmware_dir . "atmega.hex",
     attiny88   => $firmware_dir . "attiny.hex"
@@ -145,12 +149,13 @@ sub run_avrdude {
     $ENV{'MALLOC_CHECK_'} = '0';
 
     my @cmd;
-	if ($addr eq 'no_device') {
- 		@cmd = ( 'avrdude', '-v', "-p$device","-cusbasp", "-q", @command );
+	if ($addr eq 'no_address') {
+ 		@cmd = ( $avrdude, '-v', "-p$device","-c".$flasher, "-q", @command );
 	} else {
- 		@cmd = ( 'avrdude', '-v', "-p$device", "-P$addr", "-cusbasp", "-q", @command );
+ 		@cmd = ($avrdude, '-v', "-p$device", "-P$addr", "-c".$flasher, "-q", @command );
 	}
 
+    print "# ".join(" ",@cmd)."\n";
     eval {
         IPC::Run::run( \@cmd, \$in, \$out, \$err );
 
