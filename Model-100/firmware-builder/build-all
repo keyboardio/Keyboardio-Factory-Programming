@@ -48,19 +48,7 @@ my %repos = (
     },
 );
 
-my %files = (
-    build_details                     => 'BUILD_DETAILS.txt',
-    attiny_bootloader                 => "attiny88_bootloader.hex",
-    attiny_firmware_with_bootloader   => "attiny88_firmware_with_bootloader.hex",
-    attiny_firmware                   => "attiny88_firmware.hex",
-    attiny_flasher_sketch_dir         => "attiny88_flasher",
-    attiny_flasher_sketch             => "attiny88_flasher/attiny_flasher.ino",
-    gd32_bootloader                   => "gd32_bootloader.hex",
-    gd32_firmware                     => "gd32_firmware.hex",
-    gd32_firmware_with_bootloader_hex => "gd32_firmware_with_bootloader.hex",
-    gd32_firmware_with_bootloader_bin => "gd32_firmware_with_bootloader.bin"
-
-);
+my %files = ();
 
 eval {
 
@@ -127,7 +115,7 @@ sub get_code {
         if ( my $repo_refname = $args{ $repo_name . '-ref' } ) {
             $ref = $repo_refname;
         }
-        git( qw/checkout/, 'origin/' . $ref );
+        git( qw/checkout/, $ref );
         git(qw/submodule update --init --recursive/);
         git(qw/clean -xdf/);
         describe_repo_from_cwd($repo_name);
@@ -365,6 +353,21 @@ sub make_output_dir {
 }
 
 sub set_output_filenames {
+    $files = (
+        build_details                     => 'BUILD_DETAILS.txt',
+        attiny_bootloader                 => "attiny88_bootloader.hex",
+        attiny_firmware_with_bootloader   => "attiny88_firmware_with_bootloader.hex",
+        attiny_firmware                   => "attiny88_firmware.hex",
+        attiny_flasher_sketch_dir         => "attiny88_flasher",
+        attiny_flasher_sketch             => "attiny88_flasher/attiny_flasher.ino",
+        gd32_bootloader                   => "gd32_bootloader.hex",
+        gd32_firmware                     => "gd32_firmware.hex",
+        gd32_firmware                     => "gd32_firmware.bin",
+        gd32_firmware_with_bootloader_hex => "gd32_firmware_with_bootloader.hex",
+        gd32_firmware_with_bootloader_bin => "gd32_firmware_with_bootloader.bin"
+
+    );
+
     if ( $args{'hashes-in-file-names'} ) {
         $files{'attiny_bootloader'} = "attiny88_bootloader-" . $git_tags{'attiny-bootloader'} . ".hex";
         $files{'attiny_firmware_with_bootloader'} =
