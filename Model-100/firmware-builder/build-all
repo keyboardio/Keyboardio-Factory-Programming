@@ -176,7 +176,7 @@ sub build_gd32_firmware {
     my $version_cflags      = "LOCAL_CFLAGS='-DBUILD_INFORMATION=" . $version_information . "'";
     set_cwd( repo_dir('kaleidoscope') . "/examples/Devices/Keyboardio/" . $product );
     make( "compile", $version_cflags );
-    copy_built_file( $BUILD_DIR . "/firmware-sketch/" . $product . ".ino.hex" => $files{'gd32_firmware'} );
+    copy_built_file( $BUILD_DIR . "/firmware-sketch/" . $product . ".ino.hex" => $files{'gd32_firmware_hex'} );
     copy_built_file( $BUILD_DIR . "/firmware-sketch/" . $product . ".ino.bin" => $files{'gd32_firmware_bin'} );
 
 }
@@ -186,7 +186,7 @@ sub combine_gd32_bootloader_and_firmware {
     mkdir($workdir);
     set_cwd($workdir);
     copy( $OUTPUT_DIR . "/" . $files{'gd32_bootloader'} => $workdir . "/bootloader-without-term-record.hex" );
-    copy( $OUTPUT_DIR . "/" . $files{'gd32_firmware'}   => $workdir . "/firmware.hex" );
+    copy( $OUTPUT_DIR . "/" . $files{'gd32_firmware_hex'}   => $workdir . "/firmware.hex" );
     run_command( "sed", "-i", "-e", '$ d', $workdir . '/bootloader-without-term-record.hex' );
     run_command( "sed", "-i", "-e", '$ d', $workdir . '/bootloader-without-term-record.hex' );
 
@@ -361,8 +361,8 @@ sub set_output_filenames {
         attiny_flasher_sketch_dir         => "attiny88_flasher",
         attiny_flasher_sketch             => "attiny88_flasher/attiny_flasher.ino",
         gd32_bootloader                   => "gd32_bootloader.hex",
-        gd32_firmware                     => "gd32_firmware.hex",
-        gd32_firmware                     => "gd32_firmware.bin",
+        gd32_firmware_hex                 => "gd32_firmware.hex",
+        gd32_firmware_bin                 => "gd32_firmware.bin",
         gd32_firmware_with_bootloader_hex => "gd32_firmware_with_bootloader.hex",
         gd32_firmware_with_bootloader_bin => "gd32_firmware_with_bootloader.bin"
 
@@ -377,7 +377,7 @@ sub set_output_filenames {
         $files{'attiny_flasher_sketch'} =
           $files{'attiny_flasher_sketch_dir'} . "/attiny_flasher-" . $git_tags{'attiny-firmware'} . ".ino";
         $files{'gd32_bootloader'}   = "gd32_bootloader-" . $git_tags{'kaleidoscope'} . ".hex";
-        $files{'gd32_firmware'}     = "gd32_firmware-" . $git_tags{'gd32-firmware'} . ".hex";
+        $files{'gd32_firmware_hex'}     = "gd32_firmware-" . $git_tags{'gd32-firmware'} . ".hex";
         $files{'gd32_firmware_bin'} = "gd32_firmware-" . $git_tags{'gd32-firmware'} . ".bin";
         $files{'gd32_firmware_with_bootloader_hex'} =
           "gd32_firmware_with_bootloader-" . $git_tags{'gd32-firmware'} . ".hex";
