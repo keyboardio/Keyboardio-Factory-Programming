@@ -353,7 +353,7 @@ sub make_output_dir {
 }
 
 sub set_output_filenames {
-    $files = (
+    %files = (
         build_details                     => 'BUILD_DETAILS.txt',
         attiny_bootloader                 => "attiny88_bootloader.hex",
         attiny_firmware_with_bootloader   => "attiny88_firmware_with_bootloader.hex",
