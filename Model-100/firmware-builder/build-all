@@ -83,13 +83,22 @@ eval {
 
     mkdir("repos");
 
+    eval {
     get_code();
     set_output_filenames();
     build_attiny_bootloader();
     build_attiny_firmware();
     build_gd32_bootloader();
+    print STDERR "Building gd32 firmware\n";
     build_gd32_firmware();
+    print STDERR " Combining firmwares\n";
     combine_gd32_bootloader_and_firmware();
+    print STDERR "Done comibining firmwares\n";
+    };
+    if (my $err = $@) {
+	    warn "Build error: $err\n";
+	    exit 1;
+    }
     describe_build();
 
     if ( $args{install} ) {
@@ -131,7 +140,7 @@ sub get_code {
         if ( my $repo_refname = $args{ $repo_name . '-ref' } ) {
             $ref = $repo_refname;
         }
-        git( qw/checkout/, $ref );
+        git( qw/checkout/, 'origin/'.$ref );
         git(qw/submodule update --init --recursive/);
         git(qw/clean -xdf/);
         describe_repo_from_cwd($repo_name);
@@ -194,7 +203,7 @@ sub build_gd32_firmware {
     $ENV{'OUTPUT_PATH'}            = $BUILD_DIR . '/firmware-sketch';
     set_cwd( repo_dir('kaleidoscope') );
     describe_repo_from_cwd('kaleidoscope');
-    make("setup");
+     make("setup");
 
     my $version_information =
       '\"kaleidoscope=' . $git_tags{'kaleidoscope'} . '\"';
@@ -207,6 +216,10 @@ sub build_gd32_firmware {
           . "/firmware-sketch/"
           . $product
           . ".ino.hex" => $files{'gd32_firmware'} );
+    copy_built_file( $BUILD_DIR
+          . "/firmware-sketch/"
+          . $product
+          . ".ino.bin" => $files{'gd32_firmware_bin'} );
 
 }
 
@@ -216,27 +229,26 @@ sub combine_gd32_bootloader_and_firmware {
     set_cwd($workdir);
     copy(   $OUTPUT_DIR . "/"
           . $files{'gd32_bootloader'} => $workdir
-          . "/bootloader.hex" );
+          . "/bootloader-without-term-record.hex" );
     copy(   $OUTPUT_DIR . "/"
           . $files{'gd32_firmware'} => $workdir
           . "/firmware.hex" );
-
+	run_command( "sed", "-i", "-e", '$ d' , $workdir . '/bootloader-without-term-record.hex');
 # To combine the bootloader and firmware hex files we need to
 # cat them together, except for the last two lines of the bootloader hex file
-# on macOS, "head -n" doesn't accept negative numbers, so instead we reverse the file
-# and use tail -n which *does* support positive offsets, starting with the "third line from the end"
-    run_command( "tac "
-          . $workdir
-          . "/bootloader.hex| tail -n +3 |tac > $workdir/bootloader-without-end.hex"
+# on macOS, "head -n" doesn't accept negative numbers, so instead we use the trivial sed invocation twice.
+	#
+	#run_command tries to be too smart about redirection and has no shell involved, so this cat would fail
+    system(
+        "cat $workdir/bootloader-without-term-record.hex $workdir/firmware.hex > $workdir/bootloader-and-firmware.hex"
     );
     run_command(
-"cat $workdir/bootloader-without-end.hex $workdir/firmware.hex  > $workdir/bootloader-and-firmware.hex"
-    );
-    run_command(
-        "arm-none-eabi-objcopy ",
+        "arm-none-eabi-objcopy",
+	"-I",
+	"ihex",
         "$workdir/bootloader-and-firmware.hex",
         "-O",
-        "bin",
+        "binary",
         "$workdir/bootloader-and-firmware.bin"
     );
 
@@ -294,7 +306,7 @@ sub run_command {
 
         # Could not run the program
         $exitcode = undef;
-        die "Could not run command '" . join( " ", @cmd ) . "'\n";
+        die "Could not run command '" . join( " ", @cmd ) . "'\n"."Output:\n".$out."\nErrors:"."\n".$err;
     }
     else {
         $exitcode = $? >> 8;
@@ -393,6 +405,8 @@ sub set_output_filenames {
           "gd32_bootloader-" . $git_tags{'kaleidoscope'} . ".hex";
         $files{'gd32_firmware'} =
           "gd32_firmware-" . $git_tags{'gd32-firmware'} . ".hex";
+        $files{'gd32_firmware_bin'} =
+          "gd32_firmware-" . $git_tags{'gd32-firmware'} . ".bin";
         $files{'gd32_firmware_with_bootloader_hex'} =
           "gd32_firmware_with_bootloader-"
           . $git_tags{'gd32-firmware'} . ".hex";
@@ -437,8 +451,8 @@ sub describe_build {
     print $out "=" x 60 . "\n";
 
     for my $cmd (
-        'arduino-builder -version',
-        'avr-gcc -v', 'git --version',
+        'arduino-cli version',
+        'arm-none-eabi-gcc -v', 'git --version',
         'make -v',    'uname -a', 'hostname'
       )
     {
