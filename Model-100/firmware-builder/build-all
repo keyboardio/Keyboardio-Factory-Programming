@@ -17,21 +17,15 @@ my $progress = 0;
 my $product  = 'Model100';
 my %args;
 
-GetOptions(
-    \%args,                    'tag=s',
-    'attiny-bootloader-ref=s', 'attiny-firmware-ref=s',
-    'kaleidoscope-ref=s',      'hashes-in-file-names',
-    'install',                 'verbose',
-    'debug',                   'help'
-);
+GetOptions( \%args, 'tag=s', 'attiny-bootloader-ref=s', 'attiny-firmware-ref=s', 'kaleidoscope-ref=s',
+    'hashes-in-file-names', 'install', 'verbose', 'debug', 'help' );
 
 if ( $args{'help'} ) {
     die "Jesse needs to doc some help";
 }
 
 if ( !$args{'tag'} ) {
-    die
-"You need to specifiy a tag or branch name that exists on all four repos in order to build.\n";
+    die "You need to specifiy a tag or branch name that exists on all four repos in order to build.\n";
 }
 
 my %repos = (
@@ -48,19 +42,21 @@ my %repos = (
         url => 'https://github.com/keyboardio/Kaleidoscope',
         dir => 'kaleidoscope'
     },
-    'bootloader' =>
-      { url => 'https://github.com/keyboardio/dapboot', dir => 'dapboot' },
+    'bootloader' => {
+        url => 'https://github.com/keyboardio/dapboot',
+        dir => 'dapboot'
+    },
 );
 
 my %files = (
-    build_details                   => 'BUILD_DETAILS.txt',
-    attiny_bootloader               => "attiny88_bootloader.hex",
-    attiny_firmware_with_bootloader => "attiny88_firmware_with_bootloader.hex",
-    attiny_firmware                 => "attiny88_firmware.hex",
-    attiny_flasher_sketch_dir       => "attiny88_flasher",
-    attiny_flasher_sketch           => "attiny88_flasher/attiny_flasher.ino",
-    gd32_bootloader                 => "gd32_bootloader.hex",
-    gd32_firmware                   => "gd32_firmware.hex",
+    build_details                     => 'BUILD_DETAILS.txt',
+    attiny_bootloader                 => "attiny88_bootloader.hex",
+    attiny_firmware_with_bootloader   => "attiny88_firmware_with_bootloader.hex",
+    attiny_firmware                   => "attiny88_firmware.hex",
+    attiny_flasher_sketch_dir         => "attiny88_flasher",
+    attiny_flasher_sketch             => "attiny88_flasher/attiny_flasher.ino",
+    gd32_bootloader                   => "gd32_bootloader.hex",
+    gd32_firmware                     => "gd32_firmware.hex",
     gd32_firmware_with_bootloader_hex => "gd32_firmware_with_bootloader.hex",
     gd32_firmware_with_bootloader_bin => "gd32_firmware_with_bootloader.bin"
 
@@ -83,22 +79,13 @@ eval {
 
     mkdir("repos");
 
-    eval {
     get_code();
     set_output_filenames();
     build_attiny_bootloader();
     build_attiny_firmware();
     build_gd32_bootloader();
-    print STDERR "Building gd32 firmware\n";
     build_gd32_firmware();
-    print STDERR " Combining firmwares\n";
     combine_gd32_bootloader_and_firmware();
-    print STDERR "Done comibining firmwares\n";
-    };
-    if (my $err = $@) {
-	    warn "Build error: $err\n";
-	    exit 1;
-    }
     describe_build();
 
     if ( $args{install} ) {
@@ -140,7 +127,7 @@ sub get_code {
         if ( my $repo_refname = $args{ $repo_name . '-ref' } ) {
             $ref = $repo_refname;
         }
-        git( qw/checkout/, 'origin/'.$ref );
+        git( qw/checkout/, 'origin/' . $ref );
         git(qw/submodule update --init --recursive/);
         git(qw/clean -xdf/);
         describe_repo_from_cwd($repo_name);
@@ -171,18 +158,10 @@ sub build_attiny_firmware {
 
     my $build_dir = "out/keyboardio-model-100-flash-attiny88";
     mkdir( $OUTPUT_DIR . $files{'attiny_flasher_sketch_dir'} );
-    copy_built_file(
-        $build_dir . "/attiny88_flasher/Makefile",
-        $files{'attiny_flasher_sketch_dir'} . "/Makefile"
-    );
-    copy_built_file( $build_dir . "/attiny88_flasher/attiny88_flasher.ino",
-        $files{'attiny_flasher_sketch'} );
-    copy_built_file(
-        $build_dir . "/attiny88_factory.hex",
-        $files{'attiny_firmware_with_bootloader'}
-    );
-    copy_built_file( $build_dir . "/attiny88_keyscanner.hex",
-        $files{'attiny_firmware'} );
+    copy_built_file( $build_dir . "/attiny88_flasher/Makefile", $files{'attiny_flasher_sketch_dir'} . "/Makefile" );
+    copy_built_file( $build_dir . "/attiny88_flasher/attiny88_flasher.ino", $files{'attiny_flasher_sketch'} );
+    copy_built_file( $build_dir . "/attiny88_factory.hex",                  $files{'attiny_firmware_with_bootloader'} );
+    copy_built_file( $build_dir . "/attiny88_keyscanner.hex",               $files{'attiny_firmware'} );
 
 }
 
@@ -203,23 +182,14 @@ sub build_gd32_firmware {
     $ENV{'OUTPUT_PATH'}            = $BUILD_DIR . '/firmware-sketch';
     set_cwd( repo_dir('kaleidoscope') );
     describe_repo_from_cwd('kaleidoscope');
-     make("setup");
+    make("setup");
 
-    my $version_information =
-      '\"kaleidoscope=' . $git_tags{'kaleidoscope'} . '\"';
-    my $version_cflags =
-      "LOCAL_CFLAGS='-DBUILD_INFORMATION=" . $version_information . "'";
-    set_cwd(
-        repo_dir('kaleidoscope') . "/examples/Devices/Keyboardio/" . $product );
+    my $version_information = '\"kaleidoscope=' . $git_tags{'kaleidoscope'} . '\"';
+    my $version_cflags      = "LOCAL_CFLAGS='-DBUILD_INFORMATION=" . $version_information . "'";
+    set_cwd( repo_dir('kaleidoscope') . "/examples/Devices/Keyboardio/" . $product );
     make( "compile", $version_cflags );
-    copy_built_file( $BUILD_DIR
-          . "/firmware-sketch/"
-          . $product
-          . ".ino.hex" => $files{'gd32_firmware'} );
-    copy_built_file( $BUILD_DIR
-          . "/firmware-sketch/"
-          . $product
-          . ".ino.bin" => $files{'gd32_firmware_bin'} );
+    copy_built_file( $BUILD_DIR . "/firmware-sketch/" . $product . ".ino.hex" => $files{'gd32_firmware'} );
+    copy_built_file( $BUILD_DIR . "/firmware-sketch/" . $product . ".ino.bin" => $files{'gd32_firmware_bin'} );
 
 }
 
@@ -227,37 +197,23 @@ sub combine_gd32_bootloader_and_firmware {
     my $workdir = $BUILD_DIR . "/combined-gd32-firmware";
     mkdir($workdir);
     set_cwd($workdir);
-    copy(   $OUTPUT_DIR . "/"
-          . $files{'gd32_bootloader'} => $workdir
-          . "/bootloader-without-term-record.hex" );
-    copy(   $OUTPUT_DIR . "/"
-          . $files{'gd32_firmware'} => $workdir
-          . "/firmware.hex" );
-	run_command( "sed", "-i", "-e", '$ d' , $workdir . '/bootloader-without-term-record.hex');
-# To combine the bootloader and firmware hex files we need to
-# cat them together, except for the last two lines of the bootloader hex file
-# on macOS, "head -n" doesn't accept negative numbers, so instead we use the trivial sed invocation twice.
-	#
-	#run_command tries to be too smart about redirection and has no shell involved, so this cat would fail
-    system(
-        "cat $workdir/bootloader-without-term-record.hex $workdir/firmware.hex > $workdir/bootloader-and-firmware.hex"
-    );
-    run_command(
-        "arm-none-eabi-objcopy",
-	"-I",
-	"ihex",
-        "$workdir/bootloader-and-firmware.hex",
-        "-O",
-        "binary",
-        "$workdir/bootloader-and-firmware.bin"
-    );
+    copy( $OUTPUT_DIR . "/" . $files{'gd32_bootloader'} => $workdir . "/bootloader-without-term-record.hex" );
+    copy( $OUTPUT_DIR . "/" . $files{'gd32_firmware'}   => $workdir . "/firmware.hex" );
+    run_command( "sed", "-i", "-e", '$ d', $workdir . '/bootloader-without-term-record.hex' );
+    run_command( "sed", "-i", "-e", '$ d', $workdir . '/bootloader-without-term-record.hex' );
 
-    copy_built_file( $workdir
-          . "/bootloader-and-firmware.hex" =>
-          $files{'gd32_firmware_with_bootloader_hex'} );
-    copy_built_file( $workdir
-          . "/bootloader-and-firmware.bin" =>
-          $files{'gd32_firmware_with_bootloader_bin'} );
+    # To combine the bootloader and firmware hex files we need to
+    # cat them together, except for the last line of the bootloader hex file
+    # on macOS, "head -n" doesn't accept negative numbers, so instead we use the trivial sed invocation twice.
+    #
+    #run_command tries to be too smart about redirection and has no shell involved, so this cat would fail
+    system(
+        "cat $workdir/bootloader-without-term-record.hex $workdir/firmware.hex > $workdir/bootloader-and-firmware.hex");
+    run_command( "arm-none-eabi-objcopy", "-I", "ihex", "$workdir/bootloader-and-firmware.hex",
+        "-O", "binary", "$workdir/bootloader-and-firmware.bin" );
+
+    copy_built_file( $workdir . "/bootloader-and-firmware.hex" => $files{'gd32_firmware_with_bootloader_hex'} );
+    copy_built_file( $workdir . "/bootloader-and-firmware.bin" => $files{'gd32_firmware_with_bootloader_bin'} );
 }
 
 sub copy {
@@ -297,7 +253,8 @@ sub run_command {
     my @cmd = (@_);
     my ( $in, $out, $err, $exitcode );
     progress();
-    print "# " . join( " ", @cmd ) . "\n" if ( $args{'debug'} );
+    print "# " . join( " ", @cmd ) . "\n"
+      if ( $args{'debug'} );
     eval {
         IPC::Run::run( \@cmd, \$in, \$out, \$err );
 
@@ -306,25 +263,39 @@ sub run_command {
 
         # Could not run the program
         $exitcode = undef;
-        die "Could not run command '" . join( " ", @cmd ) . "'\n"."Output:\n".$out."\nErrors:"."\n".$err;
+        die "Could not run command '" . join( " ", @cmd ) . "'\n" . "Output:\n" . $out . "\nErrors:" . "\n" . $err;
     }
     else {
         $exitcode = $? >> 8;
     }
 
-    print $out. "\n" if ( $out && $args{'debug'} );
-    print $err. "\n" if ( $err && $args{'debug'} );
+    print $out . "\n"
+      if ( $out
+        && $args{'debug'} );
+    print $err . "\n"
+      if ( $err
+        && $args{'debug'} );
 
-    push @build_log, "# " . join( " ", @cmd );
+    push
+      @build_log,
+      "# " . join( " ", @cmd );
     if ( $exitcode != 0 ) {
-        push @build_log, "Non-zero exit code: " . $exitcode;
+        push
+          @build_log,
+          "Non-zero exit code: " . $exitcode;
     }
     if ($out) {
-        push @build_log, $out;
+        push
+          @build_log,
+          $out;
     }
     if ($err) {
-        push @build_log, "STDERR:";
-        push @build_log, $err;
+        push
+          @build_log,
+          "STDERR:";
+        push
+          @build_log,
+          $err;
     }
 
     if ( $exitcode != 0 ) {
@@ -336,8 +307,11 @@ sub run_command {
 sub set_cwd {
     my $dir = shift;
     progress();
-    print "# cd $dir\n" if ( $args{debug} );
-    push @build_log, "# cd $dir";
+    print "# cd $dir\n"
+      if ( $args{debug} );
+    push
+      @build_log,
+      "# cd $dir";
     chdir($dir);
 }
 
@@ -347,7 +321,7 @@ sub get_cwd {
 }
 
 sub check_deps {
-    eval { run_command( 'avr-gcc', '-v' ) };
+    eval { run_command( 'avr-gcc', '-v' ); };
     if ( my $err = $@ ) {
         die "avr-gcc does not appear to be installed: $err\n";
     }
@@ -364,7 +338,9 @@ sub make_build_dir {
     if ( -l 'latest' ) {
         run_command( 'rm', 'latest' );
     }
-    symlink $datestring, 'latest';
+    symlink
+      $datestring,
+      'latest';
     chdir($datestring);
 
     return get_cwd();
@@ -374,13 +350,15 @@ sub make_output_dir {
 
     mkdir("output");
     set_cwd("output");
-    my $datestring = `date -u "+%Y-%m-%dT%H:%M:%S"`;
+    my $datestring = `date -u "+%Y-%m-%dT%H%M%S"`;
     chomp($datestring);
     mkdir($datestring);
     if ( -l 'latest' ) {
         run_command( 'rm', 'latest' );
     }
-    symlink $datestring, 'latest';
+    symlink
+      $datestring,
+      'latest';
     chdir($datestring);
 
     return get_cwd();
@@ -388,31 +366,20 @@ sub make_output_dir {
 
 sub set_output_filenames {
     if ( $args{'hashes-in-file-names'} ) {
-        $files{'attiny_bootloader'} =
-          "attiny88_bootloader-" . $git_tags{'attiny-bootloader'} . ".hex";
+        $files{'attiny_bootloader'} = "attiny88_bootloader-" . $git_tags{'attiny-bootloader'} . ".hex";
         $files{'attiny_firmware_with_bootloader'} =
-          "attiny88_firmware_with_bootloader-"
-          . $git_tags{'attiny-firmware'} . ".hex";
-        $files{'attiny_firmware'} =
-          "attiny88_firmware-" . $git_tags{'attiny-firmware'} . ".hex";
-        $files{'attiny_flasher_sketch_dir'} =
-          "attiny_flasher-" . $git_tags{'attiny-firmware'};
+          "attiny88_firmware_with_bootloader-" . $git_tags{'attiny-firmware'} . ".hex";
+        $files{'attiny_firmware'}           = "attiny88_firmware-" . $git_tags{'attiny-firmware'} . ".hex";
+        $files{'attiny_flasher_sketch_dir'} = "attiny_flasher-" . $git_tags{'attiny-firmware'};
         $files{'attiny_flasher_sketch'} =
-            $files{'attiny_flasher_sketch_dir'}
-          . "/attiny_flasher-"
-          . $git_tags{'attiny-firmware'} . ".ino";
-        $files{'gd32_bootloader'} =
-          "gd32_bootloader-" . $git_tags{'kaleidoscope'} . ".hex";
-        $files{'gd32_firmware'} =
-          "gd32_firmware-" . $git_tags{'gd32-firmware'} . ".hex";
-        $files{'gd32_firmware_bin'} =
-          "gd32_firmware-" . $git_tags{'gd32-firmware'} . ".bin";
+          $files{'attiny_flasher_sketch_dir'} . "/attiny_flasher-" . $git_tags{'attiny-firmware'} . ".ino";
+        $files{'gd32_bootloader'}   = "gd32_bootloader-" . $git_tags{'kaleidoscope'} . ".hex";
+        $files{'gd32_firmware'}     = "gd32_firmware-" . $git_tags{'gd32-firmware'} . ".hex";
+        $files{'gd32_firmware_bin'} = "gd32_firmware-" . $git_tags{'gd32-firmware'} . ".bin";
         $files{'gd32_firmware_with_bootloader_hex'} =
-          "gd32_firmware_with_bootloader-"
-          . $git_tags{'gd32-firmware'} . ".hex";
+          "gd32_firmware_with_bootloader-" . $git_tags{'gd32-firmware'} . ".hex";
         $files{'gd32_firmware_with_bootloader_bin'} =
-          "gd32_firmware_with_bootloader-"
-          . $git_tags{'gd32-firmware'} . ".bin";
+          "gd32_firmware_with_bootloader-" . $git_tags{'gd32-firmware'} . ".bin";
     }
 }
 
@@ -450,17 +417,13 @@ sub describe_build {
     print $out "\n\n\n\n";
     print $out "=" x 60 . "\n";
 
-    for my $cmd (
-        'arduino-cli version',
-        'arm-none-eabi-gcc -v', 'git --version',
-        'make -v',    'uname -a', 'hostname'
-      )
-    {
+    for my $cmd ( 'arduino-cli version', 'arm-none-eabi-gcc -v', 'git --version', 'make -v', 'uname -a', 'hostname' ) {
         my ( $exit, $stdout, $stderr ) = run_command( split( /\s+/, $cmd ) );
         print $out "\n\n";
         print $out "'$cmd':\n";
 
-        print $out $stdout || $stderr;
+        print $out $stdout
+          || $stderr;
     }
 
     close $out;
@@ -468,21 +431,14 @@ sub describe_build {
 }
 
 sub install_to_flasher {
-    copy(   $OUTPUT_DIR
-          . $files{'gd32_firmware_with_bootloader_hex'} =>
-          $FLASHER_FIRMWARE_DIR . "/gd32.hex" );
-    copy(   $OUTPUT_DIR
-          . $files{'attiny_firmware_with_bootloader'} => $FLASHER_FIRMWARE_DIR
-          . "/attiny.hex" );
-    copy(   $OUTPUT_DIR
-          . $files{'gd32_firmware_with_bootloader_hex'} =>
-          $WINDOWS_FLASHER_FIRMWARE_DIR . "/gd32.hex" );
-    copy(   $OUTPUT_DIR
-          . $files{'attiny_firmware_with_bootloader'} =>
-          $WINDOWS_FLASHER_FIRMWARE_DIR . "/attiny.hex" );
+    copy( $OUTPUT_DIR . $files{'gd32_firmware_with_bootloader_hex'} => $FLASHER_FIRMWARE_DIR . "/gd32.hex" );
+    copy( $OUTPUT_DIR . $files{'attiny_firmware_with_bootloader'}   => $FLASHER_FIRMWARE_DIR . "/attiny.hex" );
+    copy( $OUTPUT_DIR . $files{'gd32_firmware_with_bootloader_hex'} => $WINDOWS_FLASHER_FIRMWARE_DIR . "/gd32.hex" );
+    copy( $OUTPUT_DIR . $files{'attiny_firmware_with_bootloader'}   => $WINDOWS_FLASHER_FIRMWARE_DIR . "/attiny.hex" );
 }
 
 sub progress {
     $progress++;
-    print "." if ( !$args{debug} );
+    print "."
+      if ( !$args{debug} );
 }
