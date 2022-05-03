@@ -17,7 +17,7 @@ my $progress = 0;
 my $product  = 'Model100';
 my %args;
 
-GetOptions( \%args, 'tag=s', 'attiny-bootloader-ref=s', 'attiny-firmware-ref=s', 'kaleidoscope-ref=s',
+GetOptions( \%args, 'tag=s', 'attiny-bootloader-ref=s', 'attiny-firmware-ref=s', 'bootloader-ref=s', 'kaleidoscope-ref=s',
     'hashes-in-file-names', 'install', 'verbose', 'debug', 'help' );
 
 if ( $args{'help'} ) {
