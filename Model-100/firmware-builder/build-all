@@ -139,7 +139,7 @@ sub build_attiny_bootloader {
 
 sub build_attiny_firmware {
     set_cwd( repo_dir('attiny-firmware') );
-    copy( $OUTPUT_DIR . $files{'attiny_bootloader'}, "etc/bootloader.hex" );
+    copy( $OUTPUT_DIR . $files{'attiny_bootloader'}, "etc/bootloaders/keyboardio-model-100.hex");
 
     make("all");
     make("flashing-tool");
