@@ -169,8 +169,12 @@ sub build_gd32_firmware {
     $ENV{'SKETCH_IDENTIFIER'}      = 'firmware';
     $ENV{'OUTPUT_PATH'}            = $BUILD_DIR . '/firmware-sketch';
     set_cwd( repo_dir('kaleidoscope') );
-    describe_repo_from_cwd('kaleidoscope');
     make("setup");
+    describe_repo_from_cwd('kaleidoscope');
+    set_cwd( repo_dir('kaleidoscope') .".arduino/user/hardware/keyboardio/avr");
+    describe_repo_from_cwd('kaleidoscope-core-avr');
+    set_cwd( repo_dir('kaleidoscope') .".arduino/user/hardware/keyboardio/gd32");
+    describe_repo_from_cwd('kaleidoscope-core-gd32');
 
     my $version_information = '\"kaleidoscope=' . $git_tags{'kaleidoscope'} . '\"';
     my $version_cflags      = "LOCAL_CFLAGS='-DBUILD_INFORMATION=" . $version_information . "'";
