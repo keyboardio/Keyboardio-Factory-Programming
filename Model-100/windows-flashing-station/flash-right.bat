@@ -12,9 +12,30 @@
 
 bin\avrdude -v -pattiny88 -cusbtiny   || goto :wrong_attiny_1
 bin\avrdude -v -pattiny88 -cusbtiny  -e -U lfuse:w:0xEE:m -U hfuse:w:0xDD:m -U efuse:w:0xFE:m -U lock:w:0x3F:m || goto :attiny_1_error
-bin\avrdude -v -pattiny88 -cusbtiny  -V -B .5 -U flash:w:firmware/attiny88.hex:i || goto :attiny_1_error
-bin\avrdude -v -pattiny88 -cusbtiny  -U flash:v:firmware/attiny88.hex:i || goto :attiny_1_error
+bin\avrdude -v -pattiny88 -cusbtiny -u -V -B .5 -U flash:w:firmware/attiny88.hex:i || goto :attiny_1_error
+bin\avrdude -pattiny88 -cusbtiny -u -U flash:v:firmware/attiny88.hex:i || goto :attiny_try_2
 
+@echo "OK: Flashed ATTiny"
+
+@goto :start
+
+:attiny_try_2
+
+bin\avrdude -pattiny88 -cusbtiny -u -U flash:v:firmware/attiny88.hex:i || goto :attiny_try_3
+@echo "OK: Flashed ATTiny"
+
+@goto :start
+
+:attiny_try_3
+
+bin\avrdude -pattiny88 -cusbtiny -u -U flash:v:firmware/attiny88.hex:i || goto :attiny_try_4
+@echo "OK: Flashed ATTiny"
+
+@goto :start
+
+:attiny_try_4
+
+bin\avrdude -pattiny88 -cusbtiny -u -U flash:v:firmware/attiny88.hex:i || goto :attiny_1_error
 @echo "OK: Flashed ATTiny"
 
 @goto :start
