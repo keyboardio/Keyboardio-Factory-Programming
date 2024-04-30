@@ -17,7 +17,7 @@ my $progress = 0;
 my $product  = 'Model100';
 my %args;
 
-GetOptions( \%args, 'tag=s', 'attiny-bootloader-ref=s', 'attiny-firmware-ref=s', 'bootloader-ref=s', 'kaleidoscope-ref=s',
+GetOptions( \%args, 'tag=s', 'attiny-bootloader-ref=s', 'attiny-firmware-ref=s', 'bootloader-ref=s', 'kaleidoscope-ref=s', 'kaleidoscope-reported-version=s',
     'hashes-in-file-names', 'install', 'verbose', 'debug', 'help' );
 
 if ( $args{'help'} ) {
@@ -26,6 +26,10 @@ if ( $args{'help'} ) {
 
 if ( !$args{'tag'} ) {
     die "You need to specifiy a tag or branch name that exists on all four repos in order to build.\n";
+}
+
+if (!$args{'kaleidoscope-reported-version'}) {
+	die "You need to report a --kaleidoscope-reported-version for the firmware to identify itself as";
 }
 
 my %repos = (
@@ -175,7 +179,7 @@ sub build_gd32_firmware {
     describe_repo_from_cwd('kaleidoscope-core-gd32');
 
     my $version_information = '\"kaleidoscope=' . $git_tags{'kaleidoscope'} . '\"';
-    my $version_cflags      = "LOCAL_CFLAGS='-DBUILD_INFORMATION=" . $version_information . "'";
+    my $version_cflags      = "LOCAL_CFLAGS='-DDKALEIDOSCOPE_FIRMWARE_VERSION=".$args{'kaleidoscope-reported-version'}."' -DBUILD_INFORMATION=" . $version_information . "'";
     set_cwd( repo_dir('kaleidoscope') . "/examples/Devices/Keyboardio/" . $product );
     make( "compile", $version_cflags );
     copy_built_file( $BUILD_DIR . "/firmware-sketch/" . $product . ".ino.hex" => $files{'gd32_firmware_hex'} );
@@ -409,7 +413,9 @@ sub describe_build {
           . "Description: "
           . $git_tags{$key} . "\n\n";
     }
-
+    print $out "=" x 60 . "\n";
+    print $out "Firmware built to report itself as:\n";
+    print $out $args{'kaleidoscope-reported-version'}."\n";
     print $out "=" x 60 . "\n";
     print $out "Build tool invocation:\n";
     print $out join( " ", $0, @ARGV );
