@@ -73,6 +73,8 @@ eval {
 
     get_code();
     set_output_filenames();
+    bundle_source();
+
     build_attiny_bootloader();
     build_attiny_firmware();
     build_gd32_bootloader();
@@ -439,6 +441,11 @@ sub describe_build {
 
     close $out;
     set_cwd($ROOT);
+}
+
+sub bundle_source {
+	set_cwd($ROOT . 'repos/' );
+    run_command( 'tar', 'cjvf', $OUTPUT_DIR . '/source.tar.gz', 'attiny_bootloader', 'attiny_firmware', 'kaleidoscope', 'dapboot');
 }
 
 sub install_to_flasher {
