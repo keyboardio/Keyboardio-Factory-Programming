@@ -181,7 +181,7 @@ sub build_gd32_firmware {
     describe_repo_from_cwd('kaleidoscope-core-gd32');
 
     my $version_information = '\"kaleidoscope=' . $git_tags{'kaleidoscope'} . '\"';
-    my $version_cflags      = "LOCAL_CFLAGS='-DDKALEIDOSCOPE_FIRMWARE_VERSION=".$args{'kaleidoscope-reported-version'}."' -DBUILD_INFORMATION=" . $version_information . "'";
+    my $version_cflags      = "LOCAL_CFLAGS=-DKALEIDOSCOPE_FIRMWARE_VERSION=\\\"".$args{'kaleidoscope-reported-version'}."\\\" -DBUILD_INFORMATION=" . $version_information . "";
     set_cwd( repo_dir('kaleidoscope') . "/examples/Devices/Keyboardio/" . $product );
     make( "compile", $version_cflags );
     copy_built_file( $BUILD_DIR . "/firmware-sketch/" . $product . ".ino.hex" => $files{'gd32_firmware_hex'} );
@@ -445,7 +445,7 @@ sub describe_build {
 
 sub bundle_source {
 	set_cwd($ROOT . 'repos/' );
-    run_command( 'tar', 'cjvf', $OUTPUT_DIR . '/source.tar.gz', 'attiny_bootloader', 'attiny_firmware', 'kaleidoscope', 'dapboot');
+    run_command( 'tar', 'cjvf', $OUTPUT_DIR . '/source.tar.bz2','--exclude', '.git','--exclude','.arduino', '--exclude','attiny_firmware/tools/debounce_test', 'attiny_bootloader', 'attiny_firmware', 'kaleidoscope', 'dapboot');
 }
 
 sub install_to_flasher {
